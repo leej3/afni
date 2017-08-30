@@ -7,10 +7,10 @@ if(COMMAND cmake_policy)
 endif(COMMAND cmake_policy)
 
 set(NIFTI_INCLUDE_DIRS
-	"${PROJECT_SOURCE_DIR}/nifti2"
-	"${PROJECT_SOURCE_DIR}/niftilib"
-	"${PROJECT_SOURCE_DIR}/nifticdf"
-	"${PROJECT_SOURCE_DIR}/znzlib"
+	"${CMAKE_CURRENT_SOURCE_DIR}/nifti2"
+	"${CMAKE_CURRENT_SOURCE_DIR}/niftilib"
+	"${CMAKE_CURRENT_SOURCE_DIR}/nifticdf"
+	"${CMAKE_CURRENT_SOURCE_DIR}/znzlib"
 )
 set(NIFTI_INCLUDE_DIRS ${NIFTI_INCLUDE_DIRS} PARENT_SCOPE)
 

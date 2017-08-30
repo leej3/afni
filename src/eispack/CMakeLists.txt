@@ -6,4 +6,11 @@ set_source_files_properties("${output_file}" PROPERTIES COMPILE_DEFINITIONS "FUN
 list(APPEND EIS_SRCS "${output_file}")
 
 add_library(eispack ${EIS_SRCS})
-target_link_libraries(eispack f2c)
+target_link_libraries(eispack converted_from_fortran)
+
+install(TARGETS eispack
+       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+       PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+) 

@@ -9,6 +9,8 @@ SET(GIFTI_INSTALL_BIN_DIR "${CMAKE_INSTALL_PREFIX}/bin")
 SET(GIFTI_INSTALL_LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib")
 SET(GIFTI_INSTALL_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include/gifti")
 
+# include(FindITK)
+set(ITK_DIR "/usr/lib/InsightToolkit")
 find_package(ITK REQUIRED)
 include(${ITK_USE_FILE})
 include_directories(

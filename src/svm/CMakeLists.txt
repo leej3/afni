@@ -7,3 +7,10 @@ target_link_libraries(3dsvm mri)
 target_link_libraries(plug_3dsvm mri)
 
 target_include_directories(3dsvm PRIVATE $<TARGET_PROPERTY:niftiio,INTERFACE_INCLUDE_DIRECTORIES>)
+
+install(TARGETS 3dsvm plug_3dsvm
+       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+       PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+) 

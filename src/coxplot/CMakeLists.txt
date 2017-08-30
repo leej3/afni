@@ -1,45 +1,33 @@
 project(coxplot)
 cmake_minimum_required(VERSION 3.2)
-
-find_package(f2c REQUIRED)
+include(FindMotif)
 
 set(COXPLOT_INSTALL_BIN_DIR "${CMAKE_INSTALL_PREFIX}/bin/${project}")
 set(COXPLOT_INSTALL_LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib/${project}")
 set(COXPLOT_INSTALL_STA_DIR "${CMAKE_INSTALL_PREFIX}/static/${project}")
 set(COXPLOT_INSTALL_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include/${project}")
 
-find_package(f2c REQUIRED)
-find_package(Xm REQUIRED)
-find_package(Xp REQUIRED)
-find_package(Xpm REQUIRED)
-find_package(Xt REQUIRED)
+# Until I have setup modern use of target properties I will export this.
+set(COXPLOT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
 
-file(GLOB ALLO RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "*.f")
-foreach(filename ${ALLO})
-	string(REGEX REPLACE "\.f$" ".c" output_file "${filename}")
 
-	set(input_file "${CMAKE_CURRENT_SOURCE_DIR}/${filename}")
-	set(output_file "${CMAKE_CURRENT_BINARY_DIR}/${output_file}")
 
-	add_custom_command(OUTPUT "${output_file}"
-			COMMAND ${F2C_BIN} "${input_file}"
-			MAIN_DEPENDENCY "${input_file}")
+set(COXPLOT_SRCS  color.c curve.c find_color_name.c frame.c frstpt.c labmod.c
+line.c memplt.c perim.c periml.c phdot.c phline.c plot_cox.c plot_motif.c
+plot_ps.c plot_ps2.c plot_strip.c plot_ts.c plot_x11.c plotpak.inc point.c
+points.c ppak_commons.c ppak_perim.c ppak_pwrit.c ppak_pwritf.c ppak_srface.c
+pwrit.c pwritf.c set.c setdsh.c setfrm.c setlin.c setw.c srface.c tick4.c
+vector.c zzaxxx.c zzaxyy.c zzchar.c zzclip.c zzlabl.c zzlgin.c zzline.c
+zzlinx.c zzliny.c zzlogx.c zzlogy.c zzperi.c zzphph.c zzphys.c 
+)
 
-	list(APPEND ALLO_SRCS "${output_file}")
-endforeach(filename)
-list(APPEND ALLO_SRCS find_color_name.c)
-file(GLOB PLOTPAK_SRCS "ppak_*.c")
-file(GLOB PLOT_SRCS "plot_*.c")
-
-add_library(coxplot ${ALLO_SRCS} ${PLOT_SRCS} ${PLOTPAK_SRCS})
-target_link_libraries(coxplot m ${F2C_LIBRARIES} ${XM_LIBRARIES})
-
-add_executable(xxx xxx.c)
-target_link_libraries(xxx coxplot)
+add_library(coxplot ${COXPLOT_SRCS} ../machdep.h)
+target_link_libraries(coxplot m converted_from_fortran ${MOTIF_LIBRARIES})
+target_include_directories(coxplot PRIVATE ${MOTIF_INCLUDE_DIR})
+target_include_directories(coxplot PUBLIC ${COXPLOT_INCLUDE_DIRS})
 
 set_target_properties(coxplot PROPERTIES
 	PUBLIC_HEADER "coxplot.h"
-	COMPILE_DEFINITIONS "HAVE_XDBE"
 )
 
 install(TARGETS coxplot

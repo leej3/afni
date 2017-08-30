@@ -30,3 +30,11 @@ target_link_libraries(3dfit_onesign ${AVOVKLIB})
 target_link_libraries(3dkmeans ${AVOVKLIB})
 target_link_libraries(Aclustering mri)
 target_link_libraries(fit_onesign mri ${GSL_LIBRARIES})
+
+install(TARGETS ${AVOVKLIB} 3dAclustering 3dfit_onesign 3dkmeans Aclustering fit_onesign
+       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+       PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+) 
+

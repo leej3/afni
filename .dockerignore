@@ -1,1 +1,3 @@
-Dockerfile
+tests/pytest_tests/afni_test_data
+.git
+doc

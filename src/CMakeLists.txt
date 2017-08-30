@@ -1,6 +1,84 @@
-cmake_minimum_required (VERSION 3.2)
-project(AFNI)
+project(AFNI
+        VERSION ${GIT_REPO_VERSION}
+        DESCRIPTION "A package for the analysis of functional neuroimaging.")
+set( AFNI_LIBRARY_PROPERTIES 
+  BUILD_SHARED_LIBS TRUE
+  POSITION_INDEPENDENT_CODE TRUE
+)
 
+
+
+include(CPack)
+include(CMakePackageConfigHelpers)
+include(FindX11)
+include(FindMotif)
+find_package(Xt REQUIRED)
+FIND_LIBRARY(NETCDF_LIBRARY netcdf)
+
+# This doesn't work. would be nice if it did:
+include(CMakePrintHelpers)
+set(greeting hello)
+cmake_print_variables(greeting)
+cmake_print_variables(NIFTI_INCLUDE_DIRS)
+cmake_print_variables(CMAKE_C_COMPILER CMAKE_MAJOR_VERSION DOES_NOT_EXIST)
+
+
+# Check cmake version
+if(${CMAKE_VERSION} VERSION_LESS 3.12)
+    cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
+endif()
+
+# Write out package version information
+write_basic_package_version_file(
+    MyLibConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY AnyNewerVersion
+    )
+
+# Packaging support
+set(CPACK_PACKAGE_VENDOR "SSCC NIMH")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Analysis of Functional NeuroImaging")
+set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+  # To do: add licence here or point to correct path
+# set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENCE")
+# set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+set(CPACK_SOURCE_GENERATOR "TGZ;ZIP")
+set(CPACK_SOURCE_IGNORE_FILES
+    /.git
+    /dist
+    /.*build.*
+    /\\\\.DS_Store
+)
+
+
+
+### STEP 1 -- set build configuration items to override nifti_clib defaults
+
+set(NIFTI_PACKAGE_PREFIX "" CACHE STRING "Set the nifti package prefix" FORCE)
+set(NIFTI_LIBRARY_PROPERTIES ${AFNI_LIBRARY_PROPERTIES} CACHE STRING "Set the nifti library properties to match AFNI" FORCE)
+### STEP 2 -- fetch nifti_clib immediately at configuration time, so add_subdirectory can be used.
+include(FetchContent)
+# If new or changed data is needed, add that data to the https://github.com/NIFTI-Imaging/nifti-test-data repo
+# make a new release, and then update the URL and hash (shasum -a 256 <downloaded tarball>).
+
+FetchContent_Declare( fetch_nifti_clib_git_repo
+        GIT_REPOSITORY https://github.com/leej3/nifti_clib.git
+        GIT_TAG        v2.1.4 # or v3.0.0, or <HASH>
+        SOURCE_DIR     ${CMAKE_CURRENT_LIST_DIR}/nifti_clib_download # <- not standard,  remove this line to download in binary tree
+        )
+FetchContent_GetProperties(fetch_nifti_clib_git_repo)
+if(NOT fetch_nifti_clib_git_repo)
+    set(FETCHCONTENT_QUIET OFF)
+    message(STATUS "Downloading nifti_clib from github ... please wait")
+    FetchContent_Populate( fetch_nifti_clib_git_repo )
+    message(STATUS "download complete.")
+    add_subdirectory(${fetch_nifti_clib_git_repo_SOURCE_DIR} ${fetch_nifti_clib_git_repo_BINARY_DIR})
+endif()
+
+
+# add_library(AFNI::AFNI ALIAS AFNI) # this is required somewhere
 
 set(AFNI_MAJOR_VERSION 17)
 set(AFNI_MINOR_VERSION 1)
@@ -11,13 +89,14 @@ string(TIMESTAMP BUILD_DATE "%m %d %Y")
 configure_file(AFNI_version.h.in "${CMAKE_CURRENT_BINARY_DIR}/AFNI_version.h" @ONLY)
 
 
-find_package(f2c REQUIRED)
-find_package(Xt REQUIRED)
-
-
+# if this is disabled there are various files in the base directory that are
+# required for some of the bundles. I think building libraries with these
+# might be one way of solving this. another way might be to explicitly include
+# the base directory from the child directories with something like
+# "get_filename_component(PARENT_DIR ${MYPROJECT_DIR} DIRECTORY)"
 include_directories(
-	${PROJECT_SOURCE_DIR}
-	${PROJECT_BINARY_DIR}
+	${CMAKE_CURRENT_SOURCE_DIR}
+	${CMAKE_CURRENT_BINARY_DIR}
 )
 
 
@@ -34,6 +113,7 @@ add_subdirectory(python_scripts)
 add_subdirectory(R_scripts)
 
 
+
 # bundled library (XXX to remove/package elsewhere)
 macro(optional_bundle name)
 	string(TOUPPER ${name} upper)
@@ -46,8 +126,12 @@ macro(optional_bundle name)
 	endif(USE_SYSTEM_${upper})
 endmacro(optional_bundle)
 
-foreach(bundled 3DEdge avovk coxplot crorden eispack gifti netcdf nifti niml
-		ptaylor qhull rickr SUMA svm volpack XmHTML)
+
+
+add_subdirectory(niml)
+
+foreach(bundled avovk coxplot crorden eispack gifti Audio
+       ptaylor qhull svm volpack XmHTML converted_from_fortran rickr 3DEdge SUMA)
 	optional_bundle(${bundled})
 endforeach(bundled)
 
@@ -61,8 +145,6 @@ if(NOT CHECK_FRAME_BUFFER)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DGL_NO_CHECK_FRAME_BUFFER")
 endif(NOT CHECK_FRAME_BUFFER)
 
-# --
-
 file(GLOB AFOBJS "afni*.c")
 list(APPEND AFOBJS pbar.c $<TARGET_OBJECTS:parser> mcw_graf.c)
 
@@ -70,27 +152,27 @@ file(GLOB T3OBJS  "to3d*.c")
 
 file(GLOB MRI_OBJS "mri_*.c")
 list(APPEND MRI_OBJS csfft.c mcw_glob.c mcw_malloc.c cox_render.c debugtrace.c ge4_header.c rcmat.c dmat44.c)
-foreach(filename mri_affine.c mri_pc_pursuit.c mri_process_siemens.c mri_quantize.c)
-	list(REMOVE_ITEM MRI_OBJS "${PROJECT_SOURCE_DIR}/${filename}")
+foreach(filename mri_affine.c mri_pc_pursuit.c mri_process_siemens.c mri_quantize.c mri_alphasim.c mri_wf.c mri_gwarp.c mri_pvmap.c)
+   list(REMOVE_ITEM MRI_OBJS ${CMAKE_CURRENT_SOURCE_DIR}/${filename})
 endforeach(filename)
 
 file(GLOB THD_OBJS "thd_*.c")
 list(APPEND THD_OBJS afni_vedit.c ktaub.c bilinear_warp3D.c)
 foreach(filename thd_bstrap_corr.c thd_gifti.c thd_md5.c thd_rot3d_2byte.c
-		thd_serialate.c thd_ttatlas_CA_EZ.c thd_Xdataset.c thd_base64.c
-		thd_xwebber.c)
-	list(REMOVE_ITEM THD_OBJS "${PROJECT_SOURCE_DIR}/${filename}")
+    thd_serialate.c thd_ttatlas_CA_EZ.c thd_Xdataset.c thd_base64.c
+     thd_shearwarp.c)
+  list(REMOVE_ITEM THD_OBJS "${CMAKE_CURRENT_SOURCE_DIR}/${filename}")
 endforeach(filename)
-
 file(GLOB EDT_OBJS "edt_*.c")
 
 file(GLOB CS_OBJS "cs_*.c")
 list(APPEND CS_OBJS multivector.c afni_environ.c cl2.c machdep.c afni_logger.c cl1.c powell_int.c powell_newuoa.c rhdd.c zfun.c svdlib.c)
-list(REMOVE_ITEM CS_OBJS "${PROJECT_SOURCE_DIR}/cs_color.c")
-list(REMOVE_ITEM CS_OBJS "${PROJECT_SOURCE_DIR}/cs_simult.c")
+list(REMOVE_ITEM CS_OBJS "${CMAKE_CURRENT_SOURCE_DIR}/cs_color.c")
+list(REMOVE_ITEM CS_OBJS "${CMAKE_CURRENT_SOURCE_DIR}/cs_simult.c")
+list(REMOVE_ITEM CS_OBJS "${CMAKE_CURRENT_SOURCE_DIR}/cs_symeig23.c")
 
 file(GLOB SUMA_OBJS "suma_*.c")
-list(REMOVE_ITEM SUMA_OBJS "${PROJECT_SOURCE_DIR}/suma_gifti.c")
+list(REMOVE_ITEM SUMA_OBJS "${CMAKE_CURRENT_SOURCE_DIR}/suma_gifti.c")
 
 list(APPEND MISC_OBJS afni_suma.c vol2surf.c list_struct.c nifti_statlib.c matrix.c gifti_choice.c misc_math.c)
 
@@ -99,20 +181,26 @@ foreach(type byte complex float rgbyte short)
 	list(APPEND SOMEAFOBJS "${CMAKE_CURRENT_BINARY_DIR}/afni_slice_${type}.c")
 endforeach(type)
 
-set(LIBHEADERS 3ddata.h AFNI_label.h Amalloc.h afni_environ.h afni_suma.h
+add_library(libheaders OBJECT 3ddata.h AFNI_label.h Amalloc.h afni_environ.h afni_suma.h
 	afni_warp.h coxplot.h cs.h cs_qsort_small.h cs_sort_template.h
 	debugtrace.h editvol.h eispack.h killer.h list_struct.h machdep.h
 	mcw_glob.h mcw_malloc.h mri_dicom_stuff.h mri_warpfield.h mrilib.h
-	multivector.h niml.h tagset.h thd_atlas.h thd_compress.h thd_iochan.h
+	multivector.h  tagset.h thd_atlas.h thd_compress.h thd_iochan.h
 	thd_maker.h thd_ttatlas_CA_EZ.h thd_ttatlas_query.h vecmat.h vol2surf.h
+  AFNI_version.h niml.h
 )
-set(LIBHEADERS ${LIBHEADERS} "${CMAKE_CURRENT_BINARY_DIR}/AFNI_version.h")
-set(IMOBJS display.c imseq.c bbox.c xim.c xutil.c LiteClue.c thd_xwebber.c)
+target_include_directories(libheaders 
+  PUBLIC 
+  $<TARGET_PROPERTY:rickr,INTERFACE_INCLUDE_DIRECTORIES>
+  $<TARGET_PROPERTY:converted_from_fortran,INTERFACE_INCLUDE_DIRECTORIES>
+  $<TARGET_PROPERTY:coxplot,INTERFACE_INCLUDE_DIRECTORIES>
+  $<TARGET_PROPERTY:nifti2,INTERFACE_INCLUDE_DIRECTORIES>
+  )
 
 file(GLOB AFNI_HIST_FILES "afni_history*.c")
 foreach(filename afni_fimmer_compute.c afni_history.c afni_open.c
-		afni_pcor_update.c afni_slice.c ${AFNI_HIST_FILES})
-	list(REMOVE_ITEM AFOBJS "${PROJECT_SOURCE_DIR}/${filename}")
+		afni_pcor_update.c afni_slice.c afni_vcheck.c ${AFNI_HIST_FILES})
+	list(REMOVE_ITEM AFOBJS "${CMAKE_CURRENT_SOURCE_DIR}/${filename}")
 endforeach(filename)
 
 foreach(type byte float short)
@@ -130,17 +218,6 @@ foreach(type byte complex float int rgba rgbyte short)
 endforeach(type)
 
 
-function(quotize input basename)
-	set(output "${basename}.h")
-	add_custom_command(OUTPUT "${output}"
-		COMMAND quotize "${basename}" < "${input}" > "${output}"
-		MAIN_DEPENDENCY quotize)
-endfunction(quotize)
-quotize("${CMAKE_CURRENT_SOURCE_DIR}/../doc/README/README.copyright" license)
-quotize("${CMAKE_CURRENT_SOURCE_DIR}/../doc/README/README.environment" readme_env)
-quotize("${CMAKE_CURRENT_SOURCE_DIR}/../doc/README/README.afnigui" readme_afnigui)
-quotize("${CMAKE_CURRENT_SOURCE_DIR}/afni_papers.txt" afni_papers)
-
 function(configure_pcor lib_name definitions)
 	set(output_file "${CMAKE_CURRENT_BINARY_DIR}/${libname}.c")
 	configure_file(pcor.c "${output_file}" COPYONLY)
@@ -150,11 +227,11 @@ endfunction(configure_pcor)
 configure_pcor(pcor "REF_FLOAT_SINGLE")
 configure_pcor(pcorsh "REF_FLOAT_SINGLE;VOX_SHORT")
 
-foreach(filename colfit colcalc parser)
-	add_custom_command(OUTPUT "${filename}.c"
-		COMMAND ${F2C_BIN} "${PROJECT_SOURCE_DIR}/${filename}.f"
-		MAIN_DEPENDENCY "${filename}.f")
-endforeach(filename)
+# foreach(filename colfit colcalc parser)
+# 	add_custom_command(OUTPUT "${filename}.c"
+# 		COMMAND ${F2C_BIN} "${CMAKE_CURRENT_SOURCE_DIR}/${filename}.f"
+# 		MAIN_DEPENDENCY "${filename}.f")
+# endforeach(filename)
 
 
 foreach(target model_beta model_constant model_conv_PRF model_conv_PRF_6
@@ -179,16 +256,19 @@ foreach(target model_beta model_constant model_conv_PRF model_conv_PRF_6
 		plug_wavelets plug_zeropad
 )
 	add_library(${target} ${target}.c)
-	target_link_libraries(${target} mri)
+	target_link_libraries(${target} PUBLIC mri)
 endforeach(target)
 
-foreach(target 3dedge3 Xphace afni afni_open aiv)
-	add_library(${target} ${target}.c)
+add_library(afobj OBJECT ${AFOBJS})
+add_executable(afni $<TARGET_OBJECTS:afobj>)
+foreach(target Xphace afni_open aiv)
+  add_library(${target} ${target}.c)
+  target_include_directories(${target} PUBLIC ${NIFTI_INCLUDE_DIRS} ${COXPLOT_INCLUDE_DIRS})
 endforeach(target)
 
-add_library(afobj ${AFOBJS})
-add_library(mri ${MRI_OBJS} ${THD_OBJS} ${EDT_OBJS} ${CS_OBJS} ${SUMA_OBJS} ${MISC_OBJS} ${SOMEAFOBJS} ${NIML_OBJS})
-add_library(mrix ${IMOBJS})
+add_library(mri ${MRI_OBJS} ${THD_OBJS} ${EDT_OBJS} ${CS_OBJS} ${SUMA_OBJS} ${MISC_OBJS} ${SOMEAFOBJS} 
+  ${AUDIO_OBJS} $<TARGET_OBJECTS:niml::niml> $<TARGET_OBJECTS:rickr>)
+add_library(mrix display.c imseq.c bbox.c xim.c xutil.c xutil_webber.c LiteClue.c)
 add_library(parser OBJECT parser.c parser_int.c)
 add_library(plug_drealtime plug_realtime.c)
 add_library(plug_maxima plug_maxima.c maxima.c)
@@ -209,12 +289,12 @@ foreach(target 1dAstrip 1dBandpass 1dBport 1dCorrelate 1dFlagMotion 1dMarry
 		3dInvFMRI 3dKruskalWallis 3dLFCD 3dLRflip 3dLSS 3dLocalACF
 		3dLocalBistat 3dLocalHistog 3dLocalPV 3dLocalSVD 3dLocalstat
 		3dMINCtoAFNI 3dMannWhitney 3dMean 3dMedianFilter 3dMultiThresh
-		3dNLfim 3dNormalityTest 3dNotes 3dNwarpAdjust 3dNwarpApply
+       3dNormalityTest 3dNotes 3dNwarpAdjust 3dNwarpApply
 		3dNwarpCalc 3dNwarpCat 3dNwarpFuncs 3dNwarpXYZ 3dOverlap
 		3dPeriodogram 3dPolyfit 3dPval 3dQwarp 3dREMLfit 3dROIstats
 		3dRank 3dRankizer 3dRegAna 3dRetinoPhase 3dRowFillin
 		3dSetupGroupInCorr 3dSharpen 3dSpatNorm 3dStatClust 3dSynthesize
-		3dTRfix 3dTSgen 3dTagalign 3dTcat 3dTcorr1D 3dTcorrMap
+       3dTRfix 3dTagalign 3dTcat 3dTcorr1D 3dTcorrMap
 		3dTcorrelate 3dTfilter 3dThreetoRGB 3dTnorm 3dToutcount
 		3dToyProg 3dTproject 3dTqual 3dTshift 3dTsmooth 3dTsort
 		3dTsplit4D 3dTwotoComplex 3dUndump 3dUnifize 3dUniformize
@@ -237,13 +317,13 @@ foreach(target 1dAstrip 1dBandpass 1dBport 1dCorrelate 1dFlagMotion 1dMarry
 		uniq_images unu warping_test whereami whirlgif
 )
 	add_executable(${target} ${target}.c)
-	target_link_libraries(${target} mri)
+	target_link_libraries(${target} PUBLIC mri mrix)
 endforeach(target)
 
 foreach(i "" 2 3)
 	set(target 3dANOVA${i}) 
 	add_executable(${target} ${target}.c 3dANOVA.lib)
-	target_link_libraries(${target} mri)
+	target_link_libraries(${target} PUBLIC mri mrix)
 endforeach(i)
 
 foreach(target 1dNLfit 1deval 1dmatcalc 3dDeconvolve 3dDetrend 3dTstat 3dcalc
@@ -251,8 +331,10 @@ foreach(target 1dNLfit 1deval 1dmatcalc 3dDeconvolve 3dDetrend 3dTstat 3dcalc
 		ccalc waver
 )
 	add_executable(${target} ${target}.c $<TARGET_OBJECTS:parser>)
-	target_link_libraries(${target} mri)
+	target_link_libraries(${target} PUBLIC mri mrix)
 endforeach(target)
+target_link_libraries(3dproject PUBLIC volpack)
+
 
 add_executable(3dTfitter 3dTfitter.c thd_fitter.c thd_lasso.c)
 add_executable(3dfim 3dfim.c afni_pcor_float.c ts.c)
@@ -262,9 +344,8 @@ add_executable(imreg imreg.c $<TARGET_OBJECTS:pcor>)
 add_executable(to3d ${T3OBJS})
 add_executable(3danisosmooth 3danisosmooth.c DWIstructtensor.c)
 add_executable(1dSEM 1dSEM.c sqrmat.c matrix.c)
-add_executable(3dNLfim_n 3dNLfim.c)
+add_executable(3dNLfim 3dNLfim.c)
 add_executable(gwarp mri_gwarp.c)
-add_executable(malp mri_alphasim.c)
 add_executable(3dmaxima 3dmaxima.c maxima.c)
 add_executable(3dDeconvolve_n 3dDeconvolve.c $<TARGET_OBJECTS:parser>)
 add_executable(3dDeconvolve_f 3dDeconvolve.c $<TARGET_OBJECTS:parser>)
@@ -274,47 +355,120 @@ add_executable(3dMSE 3dMSE.c sparse_array.c)
 add_executable(1dgrayplot 1dgrayplot.c display.c)
 add_executable(1dplot 1dplot.c display.c)
 add_executable(3dretroicor 3dretroicor.c retroicor.c)
+add_executable(3dedge3 3dedge3.c)
 
 
 set_source_files_properties(3dDeconvolve_f PROPERTIES COMPILE_DEFINITIONS "FLOATIZE")
 set_source_files_properties(gifti_choice.c PROPERTIES COMPILE_DEFINITIONS "DTYPE=${type}")
 
 set_target_properties(afni PROPERTIES PUBLIC_HEADER "${AFNI_HEADERS}")
-set_target_properties(mri PROPERTIES PUBLIC_HEADER "${LIBHEADERS}")
-
-target_include_directories(3dedge3 PRIVATE ${3DEDGE_INCLUDE_DIRS})
-target_include_directories(mri PUBLIC ${GIFTI_INCLUDE_DIRS} ${NIFTI_INCLUDE_DIRS} ${NIML_INCLUDE_DIRS} ${RICKR_INCLUDE_DIRS})
-target_include_directories(mrix PRIVATE ${XMHTML_INCLUDE_DIRS} ${GIFTI_INCLUDE_DIRS})
-target_include_directories(parser PRIVATE ${NIFTI_INCLUDE_DIRS} ${NIML_INCLUDE_DIRS} ${RICKR_INCLUDE_DIRS})
 
 
-foreach(target 3dfim 3dTfitter FD2 fim2 imreg gwarp 3danisosmooth malp 3dmaxima
-		3dNLfim_n 3dAllineate 3dECM 3dMSE 1dSEM 3dretroicor
+
+# target_include_directories(afni_warp PUBLIC ${COXPLOT_INCLUDE_DIRS})
+target_include_directories(3dDeconvolve PUBLIC ${COXPLOT_INCLUDE_DIRS})
+target_include_directories(3dDeconvolve_f PUBLIC ${COXPLOT_INCLUDE_DIRS})
+target_include_directories(3dMSE PUBLIC ${COXPLOT_INCLUDE_DIRS})
+target_include_directories(3dretroicor PUBLIC ${COXPLOT_INCLUDE_DIRS} ${CONVERTED_FROM_FORTRAN_INCLUDE_DIRS} ${NIFTI_INCLUDE_DIRS})
+target_include_directories(3DEdge PUBLIC ${CONVERTED_FROM_FORTRAN_INCLUDE_DIRS} ${COXPLOT_INCLUDE_DIRS})
+target_include_directories(SUMA PUBLIC ${CONVERTED_FROM_FORTRAN_INCLUDE_DIRS} ${COXPLOT_INCLUDE_DIRS} ${3DEDGE_INCLUDE_DIRS})
+target_include_directories(coxplot PUBLIC ${CONVERTED_FROM_FORTRAN_INCLUDE_DIRS} ${COXPLOT_INCLUDE_DIRS})
+target_include_directories(eispack PUBLIC ${CONVERTED_FROM_FORTRAN_INCLUDE_DIRS})
+target_include_directories(mri  PUBLIC  ${3DEDGE_INCLUDE_DIRS} ${AUDIO_INCLUDE_DIRS} ${COXPLOT_INCLUDE_DIRS})
+target_include_directories(mrix PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${XMHTML_INCLUDE_DIRS} ${GIFTI_INCLUDE_DIRS} ${COXPLOT_INCLUDE_DIRS})
+target_include_directories(afobj PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${NIFTI_INCLUDE_DIRS} ${XMHTML_INCLUDE_DIRS} ${GIFTI_INCLUDE_DIRS} ${COXPLOT_INCLUDE_DIRS})
+target_include_directories(parser PUBLIC ${NIML_INCLUDE_DIRS} ${CONVERTED_FROM_FORTRAN_INCLUDE_DIRS} ${COXPLOT_INCLUDE_DIRS} )
+target_include_directories(to3d PUBLIC ${MOTIF_INCLUDE_DIR} )
+target_include_directories(1dplot PUBLIC  ${XT_INCLUDE_DIR} ${X11_INCLUDE_DIRS} )
+
+foreach(target 3dfim 3dTfitter FD2 fim2 imreg gwarp 3danisosmooth 3dmaxima
+       3dAllineate 3dECM 3dMSE 1dSEM 
 		plug_drealtime plug_maxima plug_retroicor
 )
-	target_link_libraries(${target} mri)
+
+   target_link_libraries(${target} PUBLIC mri mrix nifticdf)
 endforeach(target)
+target_link_libraries(3dretroicor PUBLIC mri converted_from_fortran mrix coxplot)
+target_link_libraries(3dNLfim PUBLIC mri mrix ${CMAKE_DL_LIBS})
 
-target_link_libraries(1dgrayplot mri coxplot)
-target_link_libraries(1dplot mrix)
-target_link_libraries(3dDeconvolve mri coxplot)
-target_link_libraries(3dDeconvolve_f mri coxplot)
-target_link_libraries(3dDeconvolve_n mri coxplot)
-target_link_libraries(3dedge3 niml)
-target_link_libraries(Xphace mrix)
-target_link_libraries(afni afobj)
-target_link_libraries(afni_open afobj)
-target_link_libraries(afobj ${XT_LIBRARIES} mrix)
-target_link_libraries(aiv mrix)
-target_link_libraries(mri rickr nifti2_io eispack netcdf m znz nifticdf giftiio
-	${XMHTML_LIBRARIES} ${VOLPACK_LIBRARIES} ${F2C_LIBRARIES} ${XT_LIBRARIES})
-target_link_libraries(mrix mri coxplot)
-target_link_libraries(to3d mrix)
+target_link_libraries(parser PUBLIC coxplot libheaders)
+target_link_libraries(1dgrayplot PUBLIC mri coxplot ${XT_LIBRARIES})
+target_link_libraries(1dplot PUBLIC mrix mri nifti2 ${X11_Xt_LIB} ${X11_LIBRARIES})
+target_link_libraries(3dDeconvolve PUBLIC mri coxplot)
+target_link_libraries(3dDeconvolve_f PUBLIC mri coxplot)
+target_link_libraries(3dDeconvolve_n PUBLIC mri coxplot)
+target_link_libraries(Xphace PUBLIC mrix nifti2)
+target_link_libraries(afobj PUBLIC ${XT_LIBRARIES} mri mrix coxplot)
+target_link_libraries(afni PUBLIC mri ${CMAKE_DL_LIBS})
+target_link_libraries(afni_open PUBLIC mri)
+target_link_libraries(aiv PUBLIC mrix nifti2)
+# target_include_directories(aiv ${NIFTI_INCLUDE_DIRS})
+
+target_link_libraries(mri PUBLIC  libheaders mrix nifti2 nifticdf eispack netcdf m znz giftiio 3DEdge volpack
+   ${XMHTML_LIBRARIES} converted_from_fortran ${XT_LIBRARIES})
+target_link_libraries(mrix PUBLIC coxplot mri libheaders)
+target_link_libraries(to3d PUBLIC mri mrix nifti2 ${MOTIF_LIBRARIES} ${XT_LIBRARIES})
+
+target_link_libraries(3dedge3 PUBLIC mri)
 
 
-install(TARGETS afni
-	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-	PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
+# link remaining executables from rickr
+add_executable(Dimon rickr/Dimon.c rickr/realtime.c)
+add_executable(Dimon1 rickr/Dimon1.c rickr/realtime1.c)
+add_executable(3dresample rickr/3dresample.c)
+
+target_link_libraries(Dimon1 PUBLIC mri)
+target_link_libraries(Dimon PUBLIC mri)
+target_link_libraries(3dresample PUBLIC mri)
+
+
+add_executable(3dTSgen 3dTSgen.c)
+target_include_directories(3dTSgen PUBLIC ${COXPLOT_INCLUDE_DIRS} ${CONVERTED_FROM_FORTRAN_INCLUDE_DIRS})
+target_link_libraries(3dTSgen mri nifti2 converted_from_fortran coxplot ${CMAKE_DL_LIBS})
+
+
+
+# export(TARGETS afni SUMA NAMESPACE AFNI:: FILE AFNITargets.cmake)
+# export(PACKAGE AFNI)
+# find_package(AFNI should work because of the above)
+
+# check the AFNITargets file and make sure you don't have the include directory included twice if you want clean cmake files : https://cliutils.gitlab.io/modern-cmake/chapters/install/installing.html
+# install(TARGETS afni afobj
+#         EXPORT AFNITargets
+#         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+#         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+#         )
+
+
+
+
+# Install makefile programs that are built by this project.
+execute_process(
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+     COMMAND bash "-c" "make -s -f Makefile.INCLUDE prog_list")
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/prog_list.txt ALL_PROGRAMS)
+string(STRIP ${ALL_PROGRAMS} ALL_PROGRAMS)
+string(REPLACE "\n" " "  ALL_PROGRAMS ${ALL_PROGRAMS})
+separate_arguments(ALL_PROGRAMS)
+set(PROGRAMS_BUILT "")
+# message(all_progs:"${ALL_PROGRAMS}")
+foreach(program ${ALL_PROGRAMS} mri mrix)
+  if(TARGET ${program})
+  list(APPEND PROGRAMS_BUILT ${program})
+  endif()
+endforeach()
+message("progs_built:'${PROGRAMS_BUILT}'")
+install(TARGETS ${PROGRAMS_BUILT}
+       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+       PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)  
+# # First, make an install targets file (very similar to the one you made in the build directory):
+# install(EXPORT AFNITargets
+#         FILE AFNITargets.cmake
+#         NAMESPACE AFNI::
+#         DESTINATION lib/cmake/AFNI
+#          )
