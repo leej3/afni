@@ -475,7 +475,7 @@ class shell_com(object):
    history = []         # shell_com history
    save_hist = 1        # whether to record as we go
 
-   def __init__(self, com, eo="", capture=0, save_hist=1):
+   def __init__(self, com, eo="", capture=0, save_hist=1,trim_length=80):
       """create instance of shell command class
 
             com         command to execute (or echo, etc)
@@ -499,7 +499,7 @@ class shell_com(object):
 
       #If command line is long, trim it, if possible
       l1 = len(self.com)
-      if (l1 > 80):
+      if (l1 > trim_length):
          self.trimcom = self.trim()
          #if (len(self.com) < l1):
          #print "Command trimmed to: %s" % (self.com)
@@ -537,7 +537,7 @@ class shell_com(object):
 
       return
 
-   def run(self):
+   def run(self,chdir=""):
       self.echo()
       if(self.exc==1):
          return 0
@@ -545,6 +545,9 @@ class shell_com(object):
          self.status = 0
          self.exc = 1
          return 0
+      # added ability to force change directory in same command (for Dask parallelization)
+      if chdir != "" :
+         self.trimcom = ("cd %s; %s" % (chdir, self.trimcom))
       self.status, self.so, self.se = shell_exec2(self.trimcom, self.capture) 
       self.exc = 1
       return self.status
