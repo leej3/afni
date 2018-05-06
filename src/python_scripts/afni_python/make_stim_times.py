@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 import sys, os, string
-import option_list, afni_util
-import lib_textdata as TD
+from afni_python import option_list, afni_util
+import afni_python.lib_textdata as TD
 
 g_help_string = """
 ===========================================================================

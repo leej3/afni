@@ -5,15 +5,15 @@
 import sys, os
 
 # system libraries : test, then import as local symbols
-import module_test_lib
+from afni_python import module_test_lib
 testlibs = ['signal', 'time']
 if module_test_lib.num_import_failures(testlibs): sys.exit(1)
 import signal, time
 
 # AFNI libraries (besides module_test_lib)
-import option_list as OL
-import lib_realtime as RT
-import afni_util as UTIL
+import afni_python.option_list as OL
+import afni_python.lib_realtime as RT
+import afni_python.afni_util as UTIL
 
 # ----------------------------------------------------------------------
 # globals
@@ -404,7 +404,7 @@ class ReceiverInterface:
          return 1
       try:
          import numpy as N, wx
-         import lib_RR_plot as LPLOT
+         import afni_python.lib_RR_plot as LPLOT
       except:
          return 1
 

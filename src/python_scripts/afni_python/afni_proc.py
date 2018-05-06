@@ -11,12 +11,12 @@ import string, sys, os
 from time import asctime
 
 # AFNI modules
-from afni_base import *
-from afni_util import *
-from option_list import *
-from db_mod import *
-import lib_vars_object as VO
-import ask_me
+from afni_python.afni_base import *
+from afni_python.afni_util import *
+from afni_python.option_list import *
+from afni_python.db_mod import *
+import afni_python.lib_vars_object as VO
+from afni_python import ask_me
 
 # ----------------------------------------------------------------------
 # globals

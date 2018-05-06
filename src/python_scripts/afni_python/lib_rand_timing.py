@@ -3,8 +3,8 @@
 # python3 status: started
 
 import sys, random, os, math
-import afni_util as UTIL
-import lib_afni1D as LD
+import afni_python.afni_util as UTIL
+import afni_python.lib_afni1D as LD
 
 gDEF_T_GRAN     = 0.01   # default time granularity, in seconds
                          # (OLD one in mrt.py is just 0.1)
@@ -449,7 +449,7 @@ class TimingClass:
          - shuffle
       """
 
-      import lib_decay_timing as LDT
+      import afni_python.lib_decay_timing as LDT
 
       if nevents <= 0: return []
       if nevents == 1: return [tot_time]

@@ -2,9 +2,9 @@
 
 import sys, os
 
-import afni_base as B
-import afni_util as U
-import lib_afni1D as LD
+import afni_python.afni_base as B
+import afni_python.afni_util as U
+import afni_python.lib_afni1D as LD
 import lib_textdata as LT
 
 # init main vars, just to list them

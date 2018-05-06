@@ -10,12 +10,12 @@ if 1 :  # for testing, might add the current dir and ~/abin to the PATH
    except: pass
 
 # AFNI libraries
-import afni_base as BASE
-import option_list as OL
-import afni_util as UTIL
-import lib_afni1D as LAD
-import lib_vars_object as VO
-import lib_ss_review as LSS
+import afni_python.afni_base as BASE
+import afni_python.option_list as OL
+import afni_python.afni_util as UTIL        # not actually used, but probably will be
+import afni_python.lib_afni1D as LAD
+import afni_python.lib_vars_object as VO
+
 
 # ----------------------------------------------------------------------
 # globals

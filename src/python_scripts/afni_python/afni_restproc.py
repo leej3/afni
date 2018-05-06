@@ -2,7 +2,7 @@
 
 import sys
 import os
-import option_list as OL
+import afni_python.option_list as OL
 import random
 from afni_base import *
 from db_mod import *

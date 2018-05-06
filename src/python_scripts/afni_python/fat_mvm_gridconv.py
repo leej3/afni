@@ -19,7 +19,7 @@
 ###########################################################################
 
 
-import lib_fat_funcs as GR
+import afni_python.lib_fat_funcs as GR
 from numpy import set_printoptions
 import getopt, sys 
 from glob import glob

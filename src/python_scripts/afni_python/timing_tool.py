@@ -7,10 +7,10 @@ import sys
 import gc, math, copy
 
 # AFNI libraries
-import option_list as OL
-import lib_timing as LT
-import afni_util as UTIL
-import lib_textdata as TD
+import afni_python.option_list as OL
+import afni_python.lib_timing as LT
+import afni_python.afni_util as UTIL
+import afni_python.lib_textdata as TD
 
 # ----------------------------------------------------------------------
 # globals

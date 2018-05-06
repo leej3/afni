@@ -10,10 +10,11 @@ if __name__ == '__main__':
    sys.exit(1)
 
 import math, os
-import afni_base as BASE, afni_util as UTIL
-import option_list as OL
-import lib_afni1D as LD
-import lib_vars_object as VO
+import afni_python.afni_base as BASE
+import afni_python.afni_util as UTIL
+import afni_python.option_list as OL
+import afni_python.lib_afni1D as LD
+import afni_python.lib_vars_object as VO
 
 # types of motion simulated datasets that can be created
 #    motion     : simulated motion time series - volreg base warped
@@ -1201,7 +1202,7 @@ def copy_ricor_regs_str(proc):
     lstr = ''
     if proc.ricor_nlast > 0:
         try:
-            import lib_afni1D as LAD
+            import afni_python.lib_afni1D as LAD
             for reg in proc.ricor_regs:
                 adata = LAD.Afni1D(reg)
                 trs.append(adata.nt)
@@ -1330,7 +1331,7 @@ def db_cmd_ricor(proc, block):
     # check regressors against nslices and nTR (also check reg[0] existence)
     adata = None
     try:
-        import lib_afni1D as LAD
+        import afni_python.lib_afni1D as LAD
         adata = LAD.Afni1D(proc.ricor_regs[0], verb=proc.verb)
     except: pass
     if not adata or not adata.ready:

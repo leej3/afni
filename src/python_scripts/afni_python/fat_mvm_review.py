@@ -14,7 +14,7 @@
 ###########################################################################
 
 
-import lib_fat_funcs as GR
+import afni_python.lib_fat_funcs as GR
 import getopt, sys 
 from glob import glob
 import os.path as op
