@@ -315,6 +315,37 @@ def affine_align(ps, dset, base, suffix="_aff", aff_type="affine"):
     ab.shell_com("echo Object in rigid align: %s"% repr(o), ps.oexec,trim_length=2000)
     return o
 
+def aniso_smooth(ps, dset=None, suffix="_as", iters="3"):
+    # anisotropically smooth data
+    print("anisosmooth %s" % dset.out_prefix())
+    if(ps.do_anisosmooth == 0):
+        return dset
+    if(dset.type == 'NIFTI'):
+        # copy original to a temporary file
+        print("dataset input name is %s" % dset.input())
+        ao = ab.strip_extension(dset.input(), ['.nii', 'nii.gz'])
+        print("new AFNI name is %s" % ao[0])
+        aao = ab.afni_name("%s" % (ao[0]))
+        aao.to_afni(new_view="+orig")
+        o = ab.afni_name("%s%s%s" % (aao.out_prefix(), suffix, aao.view))
+    else:
+        o = dset.new("%s%s" % (dset.out_prefix(), suffix))
+    cmd_str = "3danisosmooth -matchorig  -3D -iters %s -prefix %s -mask %s -input %s" %     \
+        (iters, o.out_prefix(), dset.input(), dset.input())
+    print("executing:\n %s" % cmd_str)
+    if ps.ok_to_exist and o.exist():
+        print("Output already exists. That's okay")
+    elif (not o.exist() or ps.rewrite or ps.dry_run()):
+        o.delete(ps.oexec)
+        com = ab.shell_com(cmd_str, ps.oexec,trim_length=2000)
+        com.run(chdir="%s" % o.path)
+        if (not o.exist() and not ps.dry_run()):
+            print("** ERROR: Could not anisotropically smooth using \n  %s\n" % cmd_str)
+            return None
+    else:
+        ps.exists_msg(o.input())
+
+    return o
 
 
 def get_mean_brain(dset_list, ps,dset_glob, suffix="_rigid"):
@@ -531,6 +562,14 @@ def get_nl_leveln(ps, dsetlist, dsetwarp_list, basedset, delayed, qw_opts="", su
     nl_mean_brain =  delayed(affine_align)(ps, nl_mean_brain, ps.resizebase,
        suffix="_rsz", aff_type="affine")
     # nl_mean_brain = resize_template(nl_mean_brain, ps.resizebase)
+
+    # unifize the template
+    nl_mean_brain = delayed(unifize(ps, nl_mean_brain, suffix="_un"))
+
+    # anisotropically smooth the template too
+    if(ps.aniso_iters):
+      iters = ps.aniso_iters
+    nl_mean_brain = delayed(aniso_smooth(ps, nl_mean_brain, suffix="_as", iters=iters))
 
     # Dask can't return two separate objects, so combine into a single tuple
     task_graph = (nl_mean_brain, warpout_list)

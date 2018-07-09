@@ -16,7 +16,7 @@ from afni_python.option_list import OptionList, read_options
 class RegWrap():
     def __init__(self, label):
         # software version (update for changes)
-        self.make_template_version = "0.01"
+        self.make_template_version = "0.02"
         # user assigned path for output (not used yet)
         self.output_dir = 'iterative_template_dir'
         self.ok_to_exist = 0 #Fail if weight data exists
@@ -40,6 +40,8 @@ class RegWrap():
         self.do_rigid = 1
         self.do_affine = 1
         self.do_nonlinear = 1
+        self.do_anisosmooth = 1
+
         self.do_rigid_only = 0   # major stages to do when doing just one
         self.do_affine_only = 0
         self.do_nl_only = 0
@@ -49,6 +51,7 @@ class RegWrap():
         self.max_threads = 0   # user sets maximum number of threads
         self.warpsets = []
         self.cluster_queue = []
+        self.aniso_iters = "3"
         return
 
     def init_opts(self):
@@ -91,6 +94,9 @@ class RegWrap():
                                 helpstr="Do not remove skull")
         self.valid_opts.add_opt('-no_unifize', 0, [],
                                 helpstr="Do not unifize data intensities across subjects")
+        self.valid_opts.add_opt('-no_anisosmooth', 0, [],
+                                helpstr="Do not anisotropically smooth the mean templates")
+
         self.valid_opts.add_opt('-no_rigid', 0, [],
                                 helpstr="Do not do rigid alignment step,\n"
                                         "use base as input to affine stage")
@@ -131,6 +137,8 @@ class RegWrap():
                                 helpstr="SLURM cluster node memory minimum (20g)")
         self.valid_opts.add_opt('-warpsets', -1, [],
                                 helpstr="Names of warp datasets if doing a specified nonlinear level")
+        self.valid_opts.add_opt('-aniso_iters', 1, [],
+                                helpstr="Number of iterations for anisotropical smoothing")
 
 
     def dry_run(self):
@@ -248,6 +256,16 @@ class RegWrap():
             if((opt == "") or (opt == " ")):
                 self.error_msg("Must specify minimum memory per cluster node, e.g 20g for 20 gigabytes or RAM/node")
                 self.ciao(1)
+
+        opt = opt_list.find_opt('-aniso_iters')
+        if opt != None:
+            self.aniso_iters = opt.parlist[0]
+            try:
+               tempiters = int(opt.parlist[0])
+            except:
+                self.error_msg("Must provide an integer for number of Dask worker CPUs")
+                self.ciao(1)
+
 
     def get_user_opts(self,help_str):
         self.valid_opts.check_special_opts(sys.argv)  # ZSS March 2014
@@ -392,12 +410,17 @@ class RegWrap():
         # unifize is on by default
         opt = self.user_opts.find_opt('-no_unifize')
         if opt != None:
-            self.unifize = 0
+            self.do_unifize = 0
 
         # skull stripping is on by default
         opt = self.user_opts.find_opt('-no_strip')
         if opt != None:
             self.do_skullstrip = 0
+
+        # anisotropically smooth is on by default
+        opt = self.user_opts.find_opt('-no_anisosmooth')
+        if opt != None:
+            self.do_anisosmooth = 0
 
         # rigid alignment is on by default
         opt = self.user_opts.find_opt('-no_rigid')
