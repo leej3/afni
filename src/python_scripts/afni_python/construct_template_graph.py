@@ -330,7 +330,7 @@ def aniso_smooth(ps, dset=None, suffix="_as", iters="3"):
         o = ab.afni_name("%s%s%s" % (aao.out_prefix(), suffix, aao.view))
     else:
         o = dset.new("%s%s" % (dset.out_prefix(), suffix))
-    cmd_str = "3danisosmooth -matchorig  -3D -iters %s -prefix %s -mask %s -input %s" %     \
+    cmd_str = "3danisosmooth -matchorig  -3D -iters %s -prefix %s -mask %s %s" %     \
         (iters, o.out_prefix(), dset.input(), dset.input())
     print("executing:\n %s" % cmd_str)
     if ps.ok_to_exist and o.exist():
@@ -564,12 +564,12 @@ def get_nl_leveln(ps, dsetlist, dsetwarp_list, basedset, delayed, qw_opts="", su
     # nl_mean_brain = resize_template(nl_mean_brain, ps.resizebase)
 
     # unifize the template
-    nl_mean_brain = delayed(unifize(ps, nl_mean_brain, suffix="_un"))
+    nl_mean_brain = delayed(unifize)(ps, nl_mean_brain, suffix="_un")
 
     # anisotropically smooth the template too
     if(ps.aniso_iters):
       iters = ps.aniso_iters
-    nl_mean_brain = delayed(aniso_smooth(ps, nl_mean_brain, suffix="_as", iters=iters))
+    nl_mean_brain = delayed(aniso_smooth)(ps, nl_mean_brain, suffix="_as", iters=iters)
 
     # Dask can't return two separate objects, so combine into a single tuple
     task_graph = (nl_mean_brain, warpout_list)
