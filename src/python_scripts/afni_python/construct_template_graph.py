@@ -347,6 +347,58 @@ def aniso_smooth(ps, dset=None, suffix="_as", iters="3"):
 
     return o
 
+# upsample a dataset to double its resolution - 8x number of voxels in 3D
+def upsample(ps, dset=None, suffix="_rs"):
+    # resample data 2x (1/2 the voxel size)
+    print("resample %s" % dset.out_prefix())
+    if(ps.do_resample == 0):
+        return dset
+    if(dset.type == 'NIFTI'):
+        # copy original to a temporary file
+        print("dataset input name is %s" % dset.input())
+        ao = ab.strip_extension(dset.input(), ['.nii', 'nii.gz'])
+        print("new AFNI name is %s" % ao[0])
+        aao = ab.afni_name("%s" % (ao[0]))
+        aao.to_afni(new_view="+orig")
+        o = ab.afni_name("%s%s%s" % (aao.out_prefix(), suffix, aao.view))
+    else:
+        o = dset.new("%s%s" % (dset.out_prefix(), suffix))
+    
+    min_d =  self.min_dim_dset(dset)
+    min_d = min_d / 2.0
+
+    cmd_str = "3dresample -dxyz %s %s %s -prefix %s -input %s" %     \
+        (min_d, min_d, min_d, o.out_prefix(), dset.input())
+    print("executing:\n %s" % cmd_str)
+    if ps.ok_to_exist and o.exist():
+        print("Output already exists. That's okay")
+    elif (not o.exist() or ps.rewrite or ps.dry_run()):
+        o.delete(ps.oexec)
+        com = ab.shell_com(cmd_str, ps.oexec,trim_length=2000)
+        com.run(chdir="%s" % o.path)
+        if (not o.exist() and not ps.dry_run()):
+            print("** ERROR: Could not upsample using:\n  %s\n" % cmd_str)
+            return None
+    else:
+        ps.exists_msg(o.input())
+
+    return o
+
+# find smallest dimension of dataset in x,y,z
+def min_dim_dset(self, dset=None) :
+    com = ab.shell_com(  \
+             "3dAttribute DELTA %s" % dset.input(), ps.oexec,capture=1)
+    if  ps.dry_run():
+       return (1.234567)
+    else:
+       com.run()
+
+    min_dx = min([abs(float(com.val(0,i))) for i in range(3)])
+
+    if(min_dx==0.0):
+        min_dx = 1.0
+    return (min_dx)
+
 
 def get_mean_brain(dset_list, ps,dset_glob, suffix="_rigid"):
     assert(dset_list[0] is not None)
