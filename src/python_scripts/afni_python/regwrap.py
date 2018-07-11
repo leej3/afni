@@ -52,6 +52,7 @@ class RegWrap():
         self.warpsets = []
         self.cluster_queue = []
         self.aniso_iters = "3"
+        self.upsample_level = [] # no upsampling by default
         return
 
     def init_opts(self):
@@ -116,6 +117,9 @@ class RegWrap():
         self.valid_opts.add_opt('-nl_level_only', 1, [],
                                 helpstr="Only do a single nonlinear level alignment step\n"
                                         "providing a level from 0 to 4 to do")
+        self.valid_opts.add_opt('-upsample_level', 1, [],
+                                helpstr="Upsample base and warp starting at a single\n"
+                                        "nonlinear alignment level providing a level from 0 to 4")
 
         self.valid_opts.add_opt('-overwrite', 0, [],
                                 helpstr="Overwrite existing files")
@@ -468,6 +472,19 @@ class RegWrap():
                 self.error_msg("Must provide a number from 0 to 4 for a specific nonlinear level")
                 self.ciao(1)
 
+        # upsample base and then subsequent output starting at a specified nonlinear level
+        opt = self.user_opts.find_opt('-upsample_level')
+        if opt != None:
+            try:
+                self.upsample_level = int(opt.parlist[0])
+            except:
+                self.error_msg("Must provide a number from 0 to 4 for a specific nonlinear level")
+                self.ciao(1)
+            if((self.upsample_level<0) or (self.upsample_level>4)):
+                self.error_msg("Must provide a number from 0 to 4 for a specific nonlinear level")
+                self.ciao(1)
+
+ 
         opt = self.user_opts.find_opt('-dsets')
         if opt == None:
             print("** ERROR: Must use -dsets option to specify input datasets\n")

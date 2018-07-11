@@ -348,10 +348,10 @@ def aniso_smooth(ps, dset=None, suffix="_as", iters="3"):
     return o
 
 # upsample a dataset to double its resolution - 8x number of voxels in 3D
-def upsample(ps, dset=None, suffix="_rs"):
+def upsample_dset(ps, dset=None, suffix="_rs"):
     # resample data 2x (1/2 the voxel size)
-    print("resample %s" % dset.out_prefix())
-    if(ps.do_resample == 0):
+    print("upsample %s" % dset.out_prefix())
+    if(not(ps.upsample_level)):
         return dset
     if(dset.type == 'NIFTI'):
         # copy original to a temporary file
@@ -364,7 +364,7 @@ def upsample(ps, dset=None, suffix="_rs"):
     else:
         o = dset.new("%s%s" % (dset.out_prefix(), suffix))
     
-    min_d =  self.min_dim_dset(dset)
+    min_d = min_dim_dset(ps, dset)
     min_d = min_d / 2.0
 
     cmd_str = "3dresample -dxyz %s %s %s -prefix %s -input %s" %     \
@@ -384,8 +384,51 @@ def upsample(ps, dset=None, suffix="_rs"):
 
     return o
 
+# resample a dataset to grid of another dataset
+def resample_dset(ps, dset, base, suffix="_rs"):
+    print("resample %s" % dset.out_prefix())
+    try:
+       os.chdir(dset.path)
+    except:
+       os.chdir(os.path.abspath(os.path.dirname(dset)))
+    assert(dset is not None)
+    if(dset.type == 'NIFTI'):
+        # copy original to a temporary file
+        print("dataset input name is %s" % dset.input())
+        ao = ab.strip_extension(dset.input(), ['.nii', 'nii.gz'])
+        print("new AFNI name is %s" % ao[0])
+        aao = ab.afni_name("%s" % (ao[0]))
+        aao.to_afni(new_view="+orig")
+        o = ab.afni_name("%s%s%s" % (aao.out_prefix(), suffix, aao.view))
+    else:
+        o = dset.new("%s%s" % (dset.out_prefix(), suffix))
+
+    base_in = base.input()
+    out_prefix = o.out_prefix()
+    input_name = dset.input()
+
+    cmd_str = "\
+        3dresample -master %s -prefix %s \
+        -input %s \
+        " % (base_in, out_prefix, input_name)
+    print("executing:\n %s" % cmd_str)
+    if ps.ok_to_exist and o.exist():
+        print("Output already exists. That's okay")
+    elif (not o.exist() or ps.rewrite or ps.dry_run()):
+        o.delete(ps.oexec)
+        com = ab.shell_com(cmd_str, ps.oexec,trim_length=2000)
+        com.run(chdir="%s" % o.path)
+        if (not o.exist() and not ps.dry_run()):
+            print("** ERROR: Could not upsample using:\n  %s\n" % cmd_str)
+            return None
+    else:
+        ps.exists_msg(o.input())
+
+    return o
+
+
 # find smallest dimension of dataset in x,y,z
-def min_dim_dset(self, dset=None) :
+def min_dim_dset(ps, dset=None) :
     com = ab.shell_com(  \
              "3dAttribute DELTA %s" % dset.input(), ps.oexec,capture=1)
     if  ps.dry_run():
@@ -521,7 +564,7 @@ def get_affine_mean(ps, dsetlist, delayed):
 # initial warp provided by either iniwarpset as an AFNI dataset
 # or by iniwarplevel and composed by name dset_nlx_WARP+tlrc
 # with x as a digit string here (0,1,2,3)
-def nl_align(ps,dset,base,iniwarpset,qw_opts, suffix="_nlx", iniwarplevel=""):
+def nl_align(ps,dset,base,iniwarpset,qw_opts, suffix="_nlx", iniwarplevel="",  upsample=[]):
     try:
        os.chdir(dset.path)
     except:
@@ -541,7 +584,14 @@ def nl_align(ps,dset,base,iniwarpset,qw_opts, suffix="_nlx", iniwarplevel=""):
     else:
         # if just a level is provided for the initial warp, compose the name here
         if(iniwarplevel):
-            iniwarp = "-iniwarp %s_nl%s_WARP+tlrc" % (dset.out_prefix(), iniwarplevel)
+            # upsample the warp dataset in the same way as 3dQwarp upsamples data to base"
+            if upsample:
+                iniwarpset = dset.new("%s_nl%s_WARP" % (dset.out_prefix(), iniwarplevel))
+                resample_dset(ps, iniwarpset, base, suffix="_us") 
+                iniwarp = "-iniwarp %s_nl%s_WARP_us+tlrc" % (dset.out_prefix(), iniwarplevel)
+            # provide name of warp dataset
+            else:
+                iniwarp = "-iniwarp %s_nl%s_WARP+tlrc" % (dset.out_prefix(), iniwarplevel)
         # otherwise, no initial warp given, so skip the initial warp for 3dQwarp
         else:
             iniwarp = ""
@@ -549,10 +599,15 @@ def nl_align(ps,dset,base,iniwarpset,qw_opts, suffix="_nlx", iniwarplevel=""):
         rewrite = " -overwrite "
     else:
         rewrite = ""
+    # may need to resample to higher resolution base
+    if upsample:
+        upsample_opt = "-resample"
+    else:
+        upsample_opt = ""
     cmd_str = """\
     3dQwarp -base {base_in} -source {input_name} \
     -prefix {out_prefix} {qw_opts} \
-    {iniwarp} {rewrite}
+    {iniwarp} {rewrite} {upsample_opt}
     """
 
     cmd_str = cmd_str.format(**locals())
@@ -577,13 +632,16 @@ def nl_align(ps,dset,base,iniwarpset,qw_opts, suffix="_nlx", iniwarplevel=""):
     return o,warpset
 
 
-def get_nl_leveln(ps, dsetlist, dsetwarp_list, basedset, delayed, qw_opts="", suffix="_qw", iniwarplevel=""):
+def get_nl_leveln(ps, dsetlist, dsetwarp_list, basedset, delayed, qw_opts="", suffix="_qw", iniwarplevel="", upsample=[]):
     aligned_brains = []
     warpout_list = []
 
     cwd = os.path.abspath(os.curdir)
     if cwd != '/': cwd += '/'
 
+    if upsample:
+        basedset = delayed(upsample_dset)(ps,dset=basedset, suffix="_rs")
+        ps.basedset = basedset
     #for dset_warp in dset_warp_list:
     for dseti in range(len(dsetlist)):
         # which dataset are we working with
@@ -593,9 +651,10 @@ def get_nl_leveln(ps, dsetlist, dsetwarp_list, basedset, delayed, qw_opts="", su
            nlwarp = dsetwarp_list[dseti]
         else:
            nlwarp = []
+
         # af_aligned, nlwarp_out 
         nli_task_graph = delayed(nl_align)(ps, dset, base=ps.basedset, iniwarpset=nlwarp,
-           qw_opts= qw_opts, suffix=suffix, iniwarplevel=iniwarplevel)
+           qw_opts= qw_opts, suffix=suffix, iniwarplevel=iniwarplevel,upsample=upsample)
 
         # change back to original directory
         # af_aligned_cd = delayed(change_dirs)(af_aligned,ps, path=cwd)
@@ -633,6 +692,7 @@ def get_nl_leveln(ps, dsetlist, dsetwarp_list, basedset, delayed, qw_opts="", su
 def get_nl_mean(ps, dsetlist, dsetwarp_list, delayed):
 
     aligned_brains = []
+    upsample = []
 
     cwd = os.path.abspath(os.curdir)
     if cwd != '/': cwd += '/'
@@ -643,43 +703,57 @@ def get_nl_mean(ps, dsetlist, dsetwarp_list, delayed):
     # dsetwarp_list = []
     if((ps.nl_level_only==0) or (ps.nl_level_only==-1)):
         dsetwarp_list = []
+        if(ps.upsample_level==0):
+           upsample = 1
         nl_task_graph = get_nl_leveln(ps, dsetlist, dsetwarp_list, 
            ps.basedset, delayed,
-           qw_opts = "-blur 0 9 -minpatch 101", suffix="_nl0")
+           qw_opts = "-blur 0 9 -minpatch 101", suffix="_nl0", upsample=upsample)
 
     # the warps could be provided on input if only a single level
     # rather than computed by previous nonlinear level
     if((ps.nl_level_only==1) or (ps.nl_level_only==-1)):
-        if(ps.nl_level_only==-1):   # doing all levels, so use previous output for base and warps
-            dsetwarp_list = nl_task_graph[1]
-            ps.basedset = nl_task_graph[0]
-        nl_task_graph = get_nl_leveln(ps, dsetlist, dsetwarp_list , 
+         if(ps.nl_level_only==-1):   # doing all levels, so use previous output for base and warps
+              dsetwarp_list = nl_task_graph[1]
+              ps.basedset = nl_task_graph[0]
+         if(ps.upsample_level==1):
+              upsample = 1
+         nl_task_graph = get_nl_leveln(ps, dsetlist, dsetwarp_list , 
               ps.basedset, delayed,
-              qw_opts = "-blur 1 6 -inilev 2  -minpatch 49", suffix="_nl1", iniwarplevel="0")
+              qw_opts = "-blur 1 6 -inilev 2  -minpatch 49", 
+              suffix="_nl1", iniwarplevel="0", upsample=upsample)
 
     if((ps.nl_level_only==2) or (ps.nl_level_only==-1)):
          if(ps.nl_level_only==-1):
               dsetwarp_list = nl_task_graph[1]
               ps.basedset = nl_task_graph[0]
+         if(ps.upsample_level==2):
+              upsample = 1
          nl_task_graph = get_nl_leveln(ps, dsetlist, dsetwarp_list, 
               ps.basedset, delayed,
-              qw_opts = "-blur 0 4 -inilev 5  -minpatch 23", suffix="_nl2", iniwarplevel="1")
+              qw_opts = "-blur 0 4 -inilev 5  -minpatch 23",
+              suffix="_nl2", iniwarplevel="1", upsample=upsample)
 
     if((ps.nl_level_only==3) or (ps.nl_level_only==-1)):
          if(ps.nl_level_only==-1):
              dsetwarp_list = nl_task_graph[1]
              ps.basedset = nl_task_graph[0]
+         if(ps.upsample_level==3):
+               upsample = 1
          nl_task_graph = get_nl_leveln(ps, dsetlist, dsetwarp_list, 
              ps.basedset, delayed,
-             qw_opts = "-blur 0 -2 -inilev 7  -minpatch 13", suffix="_nl3", iniwarplevel="2")
+             qw_opts = "-blur 0 -2 -inilev 7  -minpatch 13",
+             suffix="_nl3", iniwarplevel="2", upsample=upsample)
 
     if((ps.nl_level_only==4) or (ps.nl_level_only==-1)):
          if(ps.nl_level_only==-1):
              dsetwarp_list = nl_task_graph[1]
              ps.basedset = nl_task_graph[0]
+         if(ps.upsample_level==4):
+             upsample = 1
          nl_task_graph = get_nl_leveln(ps, dsetlist, dsetwarp_list, 
              ps.basedset, delayed,
-             qw_opts = "-blur 0 -2 -inilev 9  -minpatch 9", suffix="_nl4", iniwarplevel="3")
+             qw_opts = "-blur 0 -2 -inilev 9  -minpatch 9",
+             suffix="_nl4", iniwarplevel="3", upsample=upsample)
 
     # return the mean brain template and the warps
     return nl_task_graph
