@@ -454,7 +454,8 @@ def get_mean_brain(dset_list, ps,dset_glob, suffix="_rigid"):
     o.path = ps.odir
 
     cmd_str = """\
-    3dMean -prefix mean{suffix}  {dset_glob} \
+    3dMean -prefix mean{suffix}  {dset_glob}; \
+    3dMean -prefix stdev{suffix} {dset_glob}
     """
     cmd_str = cmd_str.format(**locals())
     print("executing:\n %s" % cmd_str)
@@ -642,6 +643,9 @@ def get_nl_leveln(ps, dsetlist, dsetwarp_list, basedset, delayed, qw_opts="", su
     if upsample:
         basedset = delayed(upsample_dset)(ps,dset=basedset, suffix="_rs")
         ps.basedset = basedset
+        psbasedset = delayed(upsample_dset)(ps,dset=ps.resizebase, suffix="_rs")
+        ps.resizebase = psbasedset
+
     #for dset_warp in dset_warp_list:
     for dseti in range(len(dsetlist)):
         # which dataset are we working with
