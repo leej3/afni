@@ -455,7 +455,7 @@ def get_mean_brain(dset_list, ps,dset_glob, suffix="_rigid"):
 
     cmd_str = """\
     3dMean -prefix mean{suffix}  {dset_glob}; \
-    3dMean -prefix stdev{suffix} {dset_glob}
+    3dMean -stdev -prefix stdev{suffix} {dset_glob}
     """
     cmd_str = cmd_str.format(**locals())
     print("executing:\n %s" % cmd_str)
