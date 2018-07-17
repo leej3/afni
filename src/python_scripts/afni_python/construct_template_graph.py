@@ -561,21 +561,54 @@ def get_affine_mean(ps, dsetlist, delayed):
     # return the rigid mean brain template and the rigidly aligned_brains
     return task_graph
 
-# nonlinearly align dataset to a base dataset
-# initial warp provided by either iniwarpset as an AFNI dataset
-# or by iniwarplevel and composed by name dset_nlx_WARP+tlrc
-# with x as a digit string here (0,1,2,3)
-def nl_align(ps,dset,base,iniwarpset,qw_opts, suffix="_nlx", iniwarplevel="",  upsample=[]):
+# prepare the output for an afni function
+#  make AFNI dataset structure based on input name, additional suffix and master dataset
+# could have list of outputs with list of suffixes
+def prepare_afni_output(ps, dset, suffix, master=[])
     try:
        os.chdir(dset.path)
     except:
        os.chdir(os.path.abspath(os.path.dirname(dset)))
     assert(dset is not None)
     o = dset.new("%s%s" % (dset.out_prefix(), suffix))
-    warpset = dset.new("%s%s_WARP" % (dset.out_prefix(), suffix))
     o.path = dset.path
-    if base.view == '':
-        o.view = '+tlrc'
+    if master:
+        if master.view == '':
+            o.view = '+tlrc'
+    return o
+
+# run afni command and check if afni output dataset exists
+# return the same output dataset if it exists, otherwise return None
+# could have list of outputs
+def run_check_afni_cmd(cmd_str,ps,o,message)
+    print("command:\n %s" % cmd_str)
+    # import pdb;pdb.set_trace()
+    if ps.ok_to_exist and o.exist():
+        print("Output already exists. That's okay")
+    elif (not (o.exist()) or ps.rewrite or ps.dry_run()):
+        o.delete(ps.oexec)
+        com = ab.shell_com(cmd_str, ps.oexec,trim_length=2000)
+        print("Running in %s" % o.path)
+        com.run(chdir="%s" % o.path,capture=1)
+        if (not o.exist() and not ps.dry_run()):
+            # print error message from com
+            raise ValueError("** ERROR: %s \n  %s\n" % (message, cmd_str))
+    else:
+        ps.exists_msg(o.input())
+    return o
+
+# nonlinearly align dataset to a base dataset
+# initial warp provided by either iniwarpset as an AFNI dataset
+# or by iniwarplevel and composed by name dset_nlx_WARP+tlrc
+# with x as a digit string here (0,1,2,3)
+# returns warped dataset and WARP dataset of deformation distances
+def nl_align(ps,dset,base,iniwarpset,qw_opts, suffix="_nlx", iniwarplevel="",  upsample=[]):
+    # create output dataset structure
+    o = prepare_afni_output(ps, dset, suffix, base)
+
+    # make warp dataset structure too
+    warpset = dset.new("%s%s_WARP" % (dset.out_prefix(), suffix))
+
     input_name = dset.pv()
     out_prefix = o.out_prefix()
     base_in = base.input()
@@ -612,23 +645,9 @@ def nl_align(ps,dset,base,iniwarpset,qw_opts, suffix="_nlx", iniwarplevel="",  u
     """
 
     cmd_str = cmd_str.format(**locals())
-    print(cmd_str)
-    print('this is running')
-    print("executing:\n %s" % cmd_str)
-    # import pdb;pdb.set_trace()
 
-    if ps.ok_to_exist and o.exist():
-        print("Output already exists. That's okay")
-    elif (not (o.exist()) or ps.rewrite or ps.dry_run()):
-        o.delete(ps.oexec)
-        com = ab.shell_com(cmd_str, ps.oexec,trim_length=2000)
-        com.run(chdir="%s" % o.path)
-        if (not o.exist() and not ps.dry_run()):
-            assert(False)
-            print("** ERROR: Could not nonlinearly align using \n  %s\n" % cmd_str)
-            return None
-    else:
-        ps.exists_msg(o.input())
+    # check if output dataset was created
+    o = run_check_afni_cmd(cmd_str, ps, o, "Could not nonlinearly align using")
 
     return o,warpset
 
