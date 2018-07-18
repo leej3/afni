@@ -452,7 +452,7 @@ def min_dim_dset(ps, dset=None):
     return (min_dx)
 
 
-def get_mean_brain(dset_list, ps, dset_glob, suffix="_rigid"):
+def get_mean_brain(ps, dset_list, dset_glob, suffix="_rigid"):
     assert(dset_list[0] is not None)
     # end with a slash
     print("cd %s" % ps.odir)
@@ -499,7 +499,7 @@ def change_dirs(dset_list, ps, path="."):
 # first iteration - compute rigid mean across all subjects
 
 
-def align_to_mean(ps, basedset, dsetlist, delayed):
+def get_rigid_mean(ps, basedset, dsetlist, delayed):
 
     aligned_brains = []
 
@@ -624,8 +624,7 @@ def run_check_afni_cmd(cmd_str, ps, o, message):
 # returns warped dataset and WARP dataset of deformation distances
 
 
-def nl_align(ps, dset, base, iniwarpset, qw_opts, suffix="_nlx", iniwarplevel="", upsample=[]):
-
+def nl_align(ps, dset, base, warp, **kwargs):
     # create output dataset structure
     o = prepare_afni_output(ps, dset, suffix, base)
 
@@ -643,15 +642,15 @@ def nl_align(ps, dset, base, iniwarpset, qw_opts, suffix="_nlx", iniwarplevel=""
     else:
         # if just a level is provided for the initial warp, compose the name here
         if(iniwarplevel):
-            # upsample the warp dataset in the same way as 3dQwarp upsamples data to base"
-            if upsample:
-                iniwarpset = dset.new("%s_nl%s_WARP" %
-                                      (dset.out_prefix(), iniwarplevel))
-                resample_dset(ps, iniwarpset, base, suffix="_us")
-                iniwarp = "-iniwarp %s_nl%s_WARP_us+tlrc" % (
-                    dset.out_prefix(), iniwarplevel)
-            # provide name of warp dataset
-            else:
+            # # upsample the warp dataset in the same way as 3dQwarp upsamples data to base"
+            # if upsample:
+            #     iniwarpset = dset.new("%s_nl%s_WARP" %
+            #                           (dset.out_prefix(), iniwarplevel))
+            #     resample_dset(ps, iniwarpset, base, suffix="_us")
+            #     iniwarp = "-iniwarp %s_nl%s_WARP_us+tlrc" % (
+            #         dset.out_prefix(), iniwarplevel)
+            # # provide name of warp dataset
+            # else:
                 iniwarp = "-iniwarp %s_nl%s_WARP+tlrc" % (
                     dset.out_prefix(), iniwarplevel)
         # otherwise, no initial warp given, so skip the initial warp for 3dQwarp
@@ -677,43 +676,43 @@ def nl_align(ps, dset, base, iniwarpset, qw_opts, suffix="_nlx", iniwarplevel=""
     # check if output dataset was created
     o = run_check_afni_cmd(cmd_str, ps, o, "Could not nonlinearly align using")
 
-    return warped_brains
+    return {'aa_brain' : aa_brain,'warp': warp}
 
 
-def get_nl_leveln(ps, delayed, basedset, aa_brains, warped_brains, **kwargs):
+def get_nl_leveln(ps, delayed, target_brain, aa_brains, warpsetlist,resize_brain, **kwargs):
 
-    cwd = os.path.abspath(os.curdir)
-    if cwd != '/':
-        cwd += '/'
+    # if upsample:
+    #     target_brain = delayed(upsample_dset)(ps, dset=target_brain, suffix="_rs")
+    #     resize_brain = delayed(upsample_dset)(
+    #         ps, dset=resizebase, suffix="_rs")
+    #     warpsetlist = delayed(get_upsample_dset_list)(warpsetlist)
+    # need get_upsample_dset_list function
 
-################
-    if upsample:
-        basedset = delayed(upsample_dset)(ps, dset=basedset, suffix="_rs")
-        ps.basedset = basedset
-        psbasedset = delayed(upsample_dset)(
-            ps, dset=ps.resizebase, suffix="_rs")
-        ps.resizebase = psbasedset
-#@@@@@@@@@@@@@@@
 
-        # af_aligned, nlwarp_out
-        warped_brains = delayed(nl_align)(
-            ps, delayed, basedset, aa_brains, warped_brains, **kwargs)
+    if not warpsetlist:
+        warpsetlist = [''] * len(aa_brains)
 
-        # change back to original directory
-        # af_aligned_cd = delayed(change_dirs)(af_aligned,ps, path=cwd)
-        aligned_brains.append(nli_task_graph[0])
-        warped_brains.append(nli_task_graph[1])
+    aa_brains_out = []
+    warpsetlist_out = []
+    # af_aligned, nlwarp_out
+    for (aa_brain, warp) in zip(aa_brains,warpsetlist):
+        brain_and_warp  = delayed(nl_align)(
+        ps, aa_brain, target_brain, warp, **kwargs)
+        aa_brains_out.append(brain_and_warp['aa_brain'])
+        warpsetlist_out.append(brain_and_warp['warp'])
 
     nl_mean_brain = delayed(get_mean_brain)(
-        aligned_brains,
         ps,
-        dset_glob=("*/*%s+tlrc.HEAD" % suffix),
-        suffix=suffix)
+        aa_brains_out,
+        dset_glob=("*/*%s+tlrc.HEAD" % kwargs['suffix']),
+        suffix=kwargs['suffix'])
+
+
 
     # adjust size to avoid dilation and to match group
     # trying this out, Bob's 3dNwarpAdjust mostly works too. Could do affine at just last step.
     # may want more specialized function here instead - no shears,...
-    nl_mean_brain = delayed(affine_align)(ps, nl_mean_brain, ps.resizebase,
+    nl_mean_brain = delayed(affine_align)(ps, nl_mean_brain, resize_brain,
                                           suffix="_rsz", aff_type="affine")
     # nl_mean_brain = resize_template(nl_mean_brain, ps.resizebase)
 
@@ -723,53 +722,62 @@ def get_nl_leveln(ps, delayed, basedset, aa_brains, warped_brains, **kwargs):
     # anisotropically smooth the template too
     if(ps.aniso_iters):
         iters = ps.aniso_iters
+
     nl_mean_brain = delayed(aniso_smooth)(
         ps, nl_mean_brain, suffix="_as", iters=iters)
 
-    # return the mean brain template and the aligned_brains
-    # Dask can't return two separate objects, so combine into a single tuple
-    return (nl_mean_brain, warped_brains)
+
+    return {'nl_mean_brain': nl_mean_brain, 'aa_brains_out' : aa_brains_out, 'warpsetlist_out': aa_brains_out}
 
 # 3rd iteration - set of nonlinear iterations - compute nonlinear mean across all subjects
 
+def get_upsample_val(upsample_level):
+    upsample_dict = {}
+    for ii in range(5):
+        if ii == upsample_level:
+            upsample_dict[ii] = True
+        else:
+            upsample_dict[ii] = False
+    return upsample_dict
 
-def nl_align_to_mean(ps, delayed, basedset, aa_brains, warped_brains, level=0):
-    upsample = 1
-    cwd = os.path.abspath(os.curdir)
-    if cwd != '/':
-        cwd += '/'
-
+def get_nl_mean(ps, delayed, basedset, aa_brains, warpsetlist, resize_brain):
     # do 5 levels of nonlinear warping
     # at each level, warp a smaller neighborhood of voxels
     # following pattern of @toMNI_Qwarpar
+    nl_mean_brain = basedset
+    upsample_dict = get_upsample_val(ps.upsample_level)
     kwargs_dict = {
         0: {'qw_opts': '-blur 0 9 -minpatch 101',
-            'suffix': '_nl0', 'upsample': upsample},
+            'suffix': '_nl0', 'upsample': upsample_dict[0]},
         1: {'qw_opts': '-blur 1 6 -inilev 2  -minpatch 49',
-            'suffix': '_nl1', 'iniwarplevel': '0', 'upsample': upsample}
+            'suffix': '_nl1', 'iniwarplevel': '0', 'upsample': upsample_dict[1]},
         2: {'qw_opts': '-blur 0 4 -inilev 5  -minpatch 23',
-            'suffix': '_nl2', 'iniwarplevel': '1', 'upsample': upsample}
+            'suffix': '_nl2', 'iniwarplevel': '1', 'upsample': upsample_dict[2]},
         3: {'qw_opts': '-blur 0 -2 -inilev 7  -minpatch 13',
-            'suffix': '_nl3', 'iniwarplevel': '2', 'upsample': upsample}
+            'suffix': '_nl3', 'iniwarplevel': '2', 'upsample': upsample_dict[3]},
         4: {'qw_opts': '-blur 0 -2 -inilev 9  -minpatch 9',
-            'suffix': '_nl4', 'iniwarplevel': '3', 'upsample': upsample}
+            'suffix': '_nl4', 'iniwarplevel': '3', 'upsample': upsample_dict[4]}
     }
 
-    if level > -1:
-        levels = range(4)
+    if ps.nl_level_only == -1:
+        levels = range(5)
     else:
-        levels = [level]
-    for ii in levels:
-        (nl_mean_brain, warped_brains) = get_nl_leveln(
+        levels = range(ps.nl_level_only,5)
+    for level in levels:
+        nl_output = get_nl_leveln(
             ps,
             delayed,
-            basedset,
+            nl_mean_brain,
             aa_brains,
-            warped_brains,
+            warpsetlist,
+            resize_brain,
             **kwargs_dict[level])
+        nl_mean_brain = nl_output['nl_mean_brain']
+        aa_brains = nl_output['aa_brains_out']
+        warpsetlist = nl_output['warpsetlist_out']
 
     # return the mean brain template and the warps
-    return (nl_mean_brain, warped_brains)
+    return (nl_mean_brain, warpsetlist,aa_brains)
 
 
 # def set_new_base(ps, dset, taskgraph, delayed):
@@ -782,7 +790,7 @@ def nl_align_to_mean(ps, delayed, basedset, aa_brains, warped_brains, level=0):
 
 def get_task_graph(ps, delayed):
     # if ps.do_rigid_only:
-    #     (rigid_mean_brain, aligned_brains) = align_to_mean(ps,basedset, dsetlist, delayed)
+    #     (rigid_mean_brain, aligned_brains) = get_rigid_mean(ps,basedset, dsetlist, delayed)
     #     return task_graph
     # if ps.do_affine_only:
     #     dsetlist = []
@@ -807,27 +815,36 @@ def get_task_graph(ps, delayed):
     #             start_dset = ab.afni_name(dset_name)
     #             warpsetlist.append(start_dset)
 
-    #     task_graph = nl_align_to_mean(ps, dsetlist, warpsetlist, delayed)
+    #     task_graph = get_nl_mean(ps, dsetlist, warpsetlist, delayed)
     #     return task_graph
     dsetlist = ps.dsets.parlist
-    (rigid_mean_brain, aligned_brains) = align_to_mean(
+    if ps.warpsets:
+        warpsetlist = ps.warpsets.parlist
+    else:
+        warpsetlist = []
+
+    (rigid_mean_brain, aligned_brains) = get_rigid_mean(
         ps, ps.basedset, dsetlist, delayed)
     # task_graph = set_new_base(ps, rigid_mean_brain, aligned_brains, delayed)
     (affine_mean_brain, aligned_brains) = get_affine_mean(
         ps, rigid_mean_brain, aligned_brains, delayed)
 
-    # INPUT HERE? ALIGNED_BRAINS OR ps.dsets.parlist?
-    for level in range(4):
-        (nl_mean_brain, warped_brains) = nl_align_to_mean(ps,
-                                                          delayed,
-                                                          dsetlist,
-                                                          aligned_brains,
-                                                          level=level)
+    if ps.resizebase:
+        resize_brain = ps.resizebase
+    else:
+        resize_brain = affine_mean_brain
 
+    task_graph = get_nl_mean(ps,
+                             delayed,
+                             affine_mean_brain,
+                             aligned_brains,
+                             warpsetlist,
+                             resize_brain
+                             )
 #    affine_mean_brain = delayed(get_affine_mean)(ps, aligned_brains)
 #    ps.basedset = affine_mean_brain
 #    ps.resizebase = affine_mean_brain
-#    nl_mean_brain = delayed(nl_align_to_mean)(ps, aligned_brains)
+#    nl_mean_brain = delayed(get_nl_mean)(ps, aligned_brains)
 
     # nl_mean_brain is our final output
     # This is non-blocking. We can continue
