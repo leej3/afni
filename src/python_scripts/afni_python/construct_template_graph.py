@@ -266,7 +266,7 @@ def affine_align(ps, dset, base, suffix="_aff", aff_type="affine"):
     cmd_str = """\
     @auto_tlrc -base {base_in} -input {input_name} -no_ss -onewarp\
     {rigid_opt} -suffix {suffix} -pad_input 15 -OK_maxite -maxite 50 \
-    {rewrite} 
+    {rewrite}
     """
 
 #    cmd_str = """\
@@ -499,7 +499,7 @@ def change_dirs(dset_list, ps, path="."):
 # first iteration - compute rigid mean across all subjects
 
 
-def align_to_mean(ps,basedset, dsetlist, delayed)
+def align_to_mean(ps, basedset, dsetlist, delayed):
 
     aligned_brains = []
 
@@ -543,7 +543,7 @@ def align_to_mean(ps,basedset, dsetlist, delayed)
 # 2nd iteration - compute affine mean across all subjects
 
 
-def get_affine_mean(ps,basedset, dsetlist, delayed):
+def get_affine_mean(ps, basedset, dsetlist, delayed):
 
     aligned_brains = []
 
@@ -625,12 +625,15 @@ def run_check_afni_cmd(cmd_str, ps, o, message):
 
 
 def nl_align(ps, dset, base, iniwarpset, qw_opts, suffix="_nlx", iniwarplevel="", upsample=[]):
+
     # create output dataset structure
     o = prepare_afni_output(ps, dset, suffix, base)
 
     # make warp dataset structure too
+############
+# NOPE THIS SHOULD JUST BE WARPED_BRAINS, and this function can do the iteration.
     warpset = dset.new("%s%s_WARP" % (dset.out_prefix(), suffix))
-
+##############
     input_name = dset.pv()
     out_prefix = o.out_prefix()
     base_in = base.input()
@@ -674,42 +677,32 @@ def nl_align(ps, dset, base, iniwarpset, qw_opts, suffix="_nlx", iniwarplevel=""
     # check if output dataset was created
     o = run_check_afni_cmd(cmd_str, ps, o, "Could not nonlinearly align using")
 
-    return o, warpset
+    return warped_brains
 
 
-def get_nl_leveln(ps, dsetlist, dsetwarp_list, basedset, delayed, qw_opts="", suffix="_qw", iniwarplevel="", upsample=[]):
-    aligned_brains = []
-    warpout_list = []
+def get_nl_leveln(ps, delayed, basedset, aa_brains, warped_brains, **kwargs):
 
     cwd = os.path.abspath(os.curdir)
     if cwd != '/':
         cwd += '/'
 
+################
     if upsample:
         basedset = delayed(upsample_dset)(ps, dset=basedset, suffix="_rs")
         ps.basedset = basedset
         psbasedset = delayed(upsample_dset)(
             ps, dset=ps.resizebase, suffix="_rs")
         ps.resizebase = psbasedset
-
-    # for dset_warp in dset_warp_list:
-    for dseti in range(len(dsetlist)):
-        # which dataset are we working with
-        dset = dsetlist[dseti]
-        # use initial warp if there is one
-        if dseti < len(dsetwarp_list):
-            nlwarp = dsetwarp_list[dseti]
-        else:
-            nlwarp = []
+#@@@@@@@@@@@@@@@
 
         # af_aligned, nlwarp_out
-        nli_task_graph = delayed(nl_align)(ps, dset, base=ps.basedset, iniwarpset=nlwarp,
-                                           qw_opts=qw_opts, suffix=suffix, iniwarplevel=iniwarplevel, upsample=upsample)
+        warped_brains = delayed(nl_align)(
+            ps, delayed, basedset, aa_brains, warped_brains, **kwargs)
 
         # change back to original directory
         # af_aligned_cd = delayed(change_dirs)(af_aligned,ps, path=cwd)
         aligned_brains.append(nli_task_graph[0])
-        warpout_list.append(nli_task_graph[1])
+        warped_brains.append(nli_task_graph[1])
 
     nl_mean_brain = delayed(get_mean_brain)(
         aligned_brains,
@@ -733,20 +726,15 @@ def get_nl_leveln(ps, dsetlist, dsetwarp_list, basedset, delayed, qw_opts="", su
     nl_mean_brain = delayed(aniso_smooth)(
         ps, nl_mean_brain, suffix="_as", iters=iters)
 
-    # Dask can't return two separate objects, so combine into a single tuple
-    task_graph = (nl_mean_brain, warpout_list)
-
     # return the mean brain template and the aligned_brains
-    return task_graph
+    # Dask can't return two separate objects, so combine into a single tuple
+    return (nl_mean_brain, warped_brains)
 
 # 3rd iteration - set of nonlinear iterations - compute nonlinear mean across all subjects
 
 
-def get_nl_mean(ps, dsetlist, dsetwarp_list, delayed):
-
-    aligned_brains = []
-    upsample = []
-
+def nl_align_to_mean(ps, delayed, basedset, aa_brains, warped_brains, level=0):
+    upsample = 1
     cwd = os.path.abspath(os.curdir)
     if cwd != '/':
         cwd += '/'
@@ -754,63 +742,34 @@ def get_nl_mean(ps, dsetlist, dsetwarp_list, delayed):
     # do 5 levels of nonlinear warping
     # at each level, warp a smaller neighborhood of voxels
     # following pattern of @toMNI_Qwarpar
-    # dsetwarp_list = []
-    if((ps.nl_level_only == 0) or (ps.nl_level_only == -1)):
-        dsetwarp_list = []
-        if(ps.upsample_level == 0):
-            upsample = 1
-        nl_task_graph = get_nl_leveln(ps, dsetlist, dsetwarp_list,
-                                      ps.basedset, delayed,
-                                      qw_opts="-blur 0 9 -minpatch 101", suffix="_nl0", upsample=upsample)
+    kwargs_dict = {
+        0: {'qw_opts': '-blur 0 9 -minpatch 101',
+            'suffix': '_nl0', 'upsample': upsample},
+        1: {'qw_opts': '-blur 1 6 -inilev 2  -minpatch 49',
+            'suffix': '_nl1', 'iniwarplevel': '0', 'upsample': upsample}
+        2: {'qw_opts': '-blur 0 4 -inilev 5  -minpatch 23',
+            'suffix': '_nl2', 'iniwarplevel': '1', 'upsample': upsample}
+        3: {'qw_opts': '-blur 0 -2 -inilev 7  -minpatch 13',
+            'suffix': '_nl3', 'iniwarplevel': '2', 'upsample': upsample}
+        4: {'qw_opts': '-blur 0 -2 -inilev 9  -minpatch 9',
+            'suffix': '_nl4', 'iniwarplevel': '3', 'upsample': upsample}
+    }
 
-    # the warps could be provided on input if only a single level
-    # rather than computed by previous nonlinear level
-    if((ps.nl_level_only == 1) or (ps.nl_level_only == -1)):
-        if(ps.nl_level_only == -1):   # doing all levels, so use previous output for base and warps
-            dsetwarp_list = nl_task_graph[1]
-            ps.basedset = nl_task_graph[0]
-        if(ps.upsample_level == 1):
-            upsample = 1
-        nl_task_graph = get_nl_leveln(ps, dsetlist, dsetwarp_list,
-                                      ps.basedset, delayed,
-                                      qw_opts="-blur 1 6 -inilev 2  -minpatch 49",
-                                      suffix="_nl1", iniwarplevel="0", upsample=upsample)
-
-    if((ps.nl_level_only == 2) or (ps.nl_level_only == -1)):
-        if(ps.nl_level_only == -1):
-            dsetwarp_list = nl_task_graph[1]
-            ps.basedset = nl_task_graph[0]
-        if(ps.upsample_level == 2):
-            upsample = 1
-        nl_task_graph = get_nl_leveln(ps, dsetlist, dsetwarp_list,
-                                      ps.basedset, delayed,
-                                      qw_opts="-blur 0 4 -inilev 5  -minpatch 23",
-                                      suffix="_nl2", iniwarplevel="1", upsample=upsample)
-
-    if((ps.nl_level_only == 3) or (ps.nl_level_only == -1)):
-        if(ps.nl_level_only == -1):
-            dsetwarp_list = nl_task_graph[1]
-            ps.basedset = nl_task_graph[0]
-        if(ps.upsample_level == 3):
-            upsample = 1
-        nl_task_graph = get_nl_leveln(ps, dsetlist, dsetwarp_list,
-                                      ps.basedset, delayed,
-                                      qw_opts="-blur 0 -2 -inilev 7  -minpatch 13",
-                                      suffix="_nl3", iniwarplevel="2", upsample=upsample)
-
-    if((ps.nl_level_only == 4) or (ps.nl_level_only == -1)):
-        if(ps.nl_level_only == -1):
-            dsetwarp_list = nl_task_graph[1]
-            ps.basedset = nl_task_graph[0]
-        if(ps.upsample_level == 4):
-            upsample = 1
-        nl_task_graph = get_nl_leveln(ps, dsetlist, dsetwarp_list,
-                                      ps.basedset, delayed,
-                                      qw_opts="-blur 0 -2 -inilev 9  -minpatch 9",
-                                      suffix="_nl4", iniwarplevel="3", upsample=upsample)
+    if level > -1:
+        levels = range(4)
+    else:
+        levels = [level]
+    for ii in levels:
+        (nl_mean_brain, warped_brains) = get_nl_leveln(
+            ps,
+            delayed,
+            basedset,
+            aa_brains,
+            warped_brains,
+            **kwargs_dict[level])
 
     # return the mean brain template and the warps
-    return nl_task_graph
+    return (nl_mean_brain, warped_brains)
 
 
 # def set_new_base(ps, dset, taskgraph, delayed):
@@ -848,20 +807,27 @@ def get_task_graph(ps, delayed):
     #             start_dset = ab.afni_name(dset_name)
     #             warpsetlist.append(start_dset)
 
-    #     task_graph = get_nl_mean(ps, dsetlist, warpsetlist, delayed)
+    #     task_graph = nl_align_to_mean(ps, dsetlist, warpsetlist, delayed)
     #     return task_graph
-
-    (rigid_mean_brain, aligned_brains) = align_to_mean(ps,ps.basedset, ps.dsets.parlist, delayed)
+    dsetlist = ps.dsets.parlist
+    (rigid_mean_brain, aligned_brains) = align_to_mean(
+        ps, ps.basedset, dsetlist, delayed)
     # task_graph = set_new_base(ps, rigid_mean_brain, aligned_brains, delayed)
-    (affine_mean_brain, aligned_brains) = get_affine_mean(ps,rigid_mean_brain, aligned_brains, delayed)
+    (affine_mean_brain, aligned_brains) = get_affine_mean(
+        ps, rigid_mean_brain, aligned_brains, delayed)
 
-    warpsetlist = []
-    task_graph = get_nl_mean(ps, dsetlist, warpsetlist, delayed)
+    # INPUT HERE? ALIGNED_BRAINS OR ps.dsets.parlist?
+    for level in range(4):
+        (nl_mean_brain, warped_brains) = nl_align_to_mean(ps,
+                                                          delayed,
+                                                          dsetlist,
+                                                          aligned_brains,
+                                                          level=level)
 
 #    affine_mean_brain = delayed(get_affine_mean)(ps, aligned_brains)
 #    ps.basedset = affine_mean_brain
 #    ps.resizebase = affine_mean_brain
-#    nl_mean_brain = delayed(get_nl_mean)(ps, aligned_brains)
+#    nl_mean_brain = delayed(nl_align_to_mean)(ps, aligned_brains)
 
     # nl_mean_brain is our final output
     # This is non-blocking. We can continue
