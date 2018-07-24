@@ -452,7 +452,7 @@ def min_dim_dset(ps, dset=None):
     return (min_dx)
 
 
-def get_mean_brain(ps, dset_list, dset_glob, suffix="_rigid"):
+def get_mean_brain(dset_list, ps, dset_glob, suffix="_rigid"):
     assert(dset_list[0] is not None)
     # end with a slash
     print("cd %s" % ps.odir)
@@ -607,9 +607,9 @@ def run_check_afni_cmd(cmd_str, ps, o, message):
         print("Output already exists. That's okay")
     elif (not (o.exist()) or ps.rewrite or ps.dry_run()):
         o.delete(ps.oexec)
-        com = ab.shell_com(cmd_str, ps.oexec, trim_length=2000)
+        com = ab.shell_com(cmd_str, ps.oexec, trim_length=2000, capture=1)
         print("Running in %s" % o.path)
-        com.run(chdir="%s" % o.path, capture=1)
+        com.run(chdir="%s" % o.path)
         if (not o.exist() and not ps.dry_run()):
             # print error message from com
             raise ValueError("** ERROR: %s \n  %s\n" % (message, cmd_str))
@@ -624,7 +624,16 @@ def run_check_afni_cmd(cmd_str, ps, o, message):
 # returns warped dataset and WARP dataset of deformation distances
 
 
-def nl_align(ps, dset, base, warp, **kwargs):
+def nl_align(ps, dset, base, iniwarpset, **kwargs):
+    suffix=kwargs['suffix']
+    try:
+       iniwarplevel = kwargs['iniwarplevel']
+    except:
+       iniwarplevel = []
+    upsample = kwargs['upsample']
+    qw_opts = kwargs['qw_opts']
+
+
     # create output dataset structure
     o = prepare_afni_output(ps, dset, suffix, base)
 
@@ -676,7 +685,7 @@ def nl_align(ps, dset, base, warp, **kwargs):
     # check if output dataset was created
     o = run_check_afni_cmd(cmd_str, ps, o, "Could not nonlinearly align using")
 
-    return {'aa_brain' : aa_brain,'warp': warp}
+    return {'aa_brain' : o,'warp': warpset}
 
 
 def get_nl_leveln(ps, delayed, target_brain, aa_brains, warpsetlist,resize_brain, **kwargs):
@@ -702,8 +711,8 @@ def get_nl_leveln(ps, delayed, target_brain, aa_brains, warpsetlist,resize_brain
         warpsetlist_out.append(brain_and_warp['warp'])
 
     nl_mean_brain = delayed(get_mean_brain)(
-        ps,
         aa_brains_out,
+        ps,
         dset_glob=("*/*%s+tlrc.HEAD" % kwargs['suffix']),
         suffix=kwargs['suffix'])
 
@@ -727,7 +736,8 @@ def get_nl_leveln(ps, delayed, target_brain, aa_brains, warpsetlist,resize_brain
         ps, nl_mean_brain, suffix="_as", iters=iters)
 
 
-    return {'nl_mean_brain': nl_mean_brain, 'aa_brains_out' : aa_brains_out, 'warpsetlist_out': aa_brains_out}
+    return {'nl_mean_brain': nl_mean_brain, 'aa_brains_out' : aa_brains_out,
+            'warpsetlist_out': warpsetlist_out}
 
 # 3rd iteration - set of nonlinear iterations - compute nonlinear mean across all subjects
 
