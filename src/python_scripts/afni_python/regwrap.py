@@ -99,8 +99,10 @@ class RegWrap():
                                 helpstr="Do not remove skull")
         self.valid_opts.add_opt('-no_unifize', 0, [],
                                 helpstr="Do not unifize data intensities across subjects")
-        self.valid_opts.add_opt('-no_anisosmooth', 0, [],
-                                helpstr="Do not anisotropically smooth the mean templates")
+        self.valid_opts.add_opt('-unifize_template', 0, [],
+                                helpstr="Unifize mean templates")
+        self.valid_opts.add_opt('-anisosmooth', 0, [],
+                                helpstr="anisotropically smooth mean templates")
 
         self.valid_opts.add_opt('-no_rigid', 0, [],
                                 helpstr="Do not do rigid alignment step,\n"
