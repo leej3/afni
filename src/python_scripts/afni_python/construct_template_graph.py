@@ -452,19 +452,19 @@ def min_dim_dset(ps, dset=None):
     return (min_dx)
 
 
-def get_mean_brain(dset_list, ps, dset_glob, suffix="_rigid"):
+def get_mean_brain(dset_list, ps, dset_glob, suffix="_rigid", preprefix=""):
     assert(dset_list[0] is not None)
     # end with a slash
     print("cd %s" % ps.odir)
     if(not ps.dry_run()):
         os.chdir(ps.odir)
 
-    o = dset_list[0].new("mean%s" % (suffix))
+    o = dset_list[0].new("%smean%s" % (preprefix, suffix))
     o.path = ps.odir
 
     cmd_str = """\
-    3dMean -prefix mean{suffix}  {dset_glob}; \
-    3dMean -stdev -prefix stdev{suffix} {dset_glob}
+    3dMean -prefix {preprefix}mean{suffix}  {dset_glob}; \
+    3dMean -stdev -prefix {preprefix}stdev{suffix} {dset_glob}
     """
     cmd_str = cmd_str.format(**locals())
     print("executing:\n %s" % cmd_str)
@@ -531,7 +531,7 @@ def get_rigid_mean(ps, basedset, dsetlist, delayed):
         aligned_brains,
         ps,
         dset_glob="*/*_4rigid+tlrc.HEAD",
-        suffix="_rigid")
+        suffix="_rigid",preprefix="tp0_")
 
     print("Configured first processing loop")
     align_obj = (rigid_mean_brain, aligned_brains)
@@ -569,7 +569,7 @@ def get_affine_mean(ps, basedset, dsetlist, delayed):
         aligned_brains,
         ps,
         dset_glob="*/*_affx+tlrc.HEAD",
-        suffix="_affx")
+        suffix="_affx", preprefix="tp1_")
 
     print("Configured first processing loop")
     # return the rigid mean brain template and the rigidly aligned_brains
@@ -635,7 +635,7 @@ def nl_align(ps, dset, base, iniwarpset, **kwargs):
 
 
     # create output dataset structure
-    o = prepare_afni_output(ps, dset, suffix, base)
+    o = prepare_afni_output(ps, dset, suffix, master=base)
 
     # make warp dataset structure too
 ############
@@ -687,7 +687,44 @@ def nl_align(ps, dset, base, iniwarpset, **kwargs):
 
     return {'aa_brain' : o,'warp': warpset}
 
+# resize warp deformation dataset by concatenating affine matrix
+def resize_warp(ps, warp, rsz_brain, suffix="_rsz"):
+# help for 3dNwarpCat shows this order for its use with
+# first an auto_tlrc affine alignment followed by a nonlinear warp with 3dQwarp
+# Since we are doing the opposite order, we can reverse the order here
+# 3dNwarpCat -prefix Fred_total_WARP -warp1 Fred_WARP+tlrc.HEAD -warp2 Fred.Xat.1D 
 
+#  3dNwarpCat -prefix Fred_total_WARP -warp2 Fred_WARP+tlrc.HEAD -warp1 Fred.Xat.1D
+#
+# Note, this like 3dNwarpCalc's nonlinear warp concatenation assume the same grid
+#   and center for the combination of the affine with nonlinear warps
+#   Because we have aligned centers first, this works.
+# Use 3dNwarpApply for distant warps
+    # create output dataset structure
+    rsz_warp = prepare_afni_output(ps, warp, suffix)
+    
+    aff_matrix =  "%s.Xaff12.1D" % rsz_brain.out_prefix()
+
+    input_name = warp.pv()
+    out_prefix = rsz_warp.out_prefix()
+    if ps.rewrite:
+        rewrite = " -overwrite "
+    else:
+        rewrite = ""
+
+    cmd_str = """\
+    3dNwarpCat -prefix {out_prefix} -warp2 {input_name} -warp1 {aff_matrix} \
+    {rewrite}
+    """
+    cmd_str = cmd_str.format(**locals())
+
+    # check if output dataset was created
+    rsz_warp = run_check_afni_cmd(cmd_str, ps, rsz_warp,
+        "Could not resize warp using")
+
+
+    return rsz_warp
+     
 def get_nl_leveln(ps, delayed, target_brain, aa_brains, warpsetlist,resize_brain, **kwargs):
 
     # if upsample:
@@ -700,7 +737,9 @@ def get_nl_leveln(ps, delayed, target_brain, aa_brains, warpsetlist,resize_brain
 
     if not warpsetlist:
         warpsetlist = [''] * len(aa_brains)
-
+    nl_level = kwargs["nl_level"]	
+    tp_level = nl_level+2	
+    preprefix = "tp%s_" % tp_level
     aa_brains_out = []
     warpsetlist_out = []
     # af_aligned, nlwarp_out
@@ -714,7 +753,7 @@ def get_nl_leveln(ps, delayed, target_brain, aa_brains, warpsetlist,resize_brain
         aa_brains_out,
         ps,
         dset_glob=("*/*%s+tlrc.HEAD" % kwargs['suffix']),
-        suffix=kwargs['suffix'])
+        suffix=kwargs['suffix'],preprefix=preprefix)
 
 
 
@@ -722,11 +761,18 @@ def get_nl_leveln(ps, delayed, target_brain, aa_brains, warpsetlist,resize_brain
     # trying this out, Bob's 3dNwarpAdjust mostly works too. Could do affine at just last step.
     # may want more specialized function here instead - no shears,...
     nl_mean_brain = delayed(affine_align)(ps, nl_mean_brain, resize_brain,
-                                          suffix="_rsz", aff_type="affine")
+                                          suffix="_rsz", aff_type="affine")      
+    
     # nl_mean_brain = resize_template(nl_mean_brain, ps.resizebase)
-
+    # resize the warps too by concatenating resize affine transformation to warp
+    warpsetlist_out2 = []
+    for warp in (warpsetlist_out):
+        warp_out = delayed(resize_warp)(ps,warp,nl_mean_brain,suffix="_rsz")
+        warpsetlist_out2.append(warp_out)
+	
     # unifize the template
-    nl_mean_brain = delayed(unifize)(ps, nl_mean_brain, suffix="_un")
+    if(ps.do_unifize_template):
+        nl_mean_brain = delayed(unifize)(ps, nl_mean_brain, suffix="_un")
 
     # anisotropically smooth the template too
     if(ps.aniso_iters):
@@ -735,9 +781,10 @@ def get_nl_leveln(ps, delayed, target_brain, aa_brains, warpsetlist,resize_brain
     nl_mean_brain = delayed(aniso_smooth)(
         ps, nl_mean_brain, suffix="_as", iters=iters)
 
-
+    # return resized (and possibly unifized and anisotropically smoothed) mean
+    #  brain and resized warps
     return {'nl_mean_brain': nl_mean_brain, 'aa_brains_out' : aa_brains_out,
-            'warpsetlist_out': warpsetlist_out}
+            'warpsetlist_out': warpsetlist_out2}
 
 # 3rd iteration - set of nonlinear iterations - compute nonlinear mean across all subjects
 
@@ -758,15 +805,19 @@ def get_nl_mean(ps, delayed, basedset, aa_brains, warpsetlist, resize_brain):
     upsample_dict = get_upsample_val(ps.upsample_level)
     kwargs_dict = {
         0: {'qw_opts': '-blur 0 9 -minpatch 101',
-            'suffix': '_nl0', 'upsample': upsample_dict[0]},
+            'suffix': '_nl0', 'upsample': upsample_dict[0], 'nl_level':0},
         1: {'qw_opts': '-blur 1 6 -inilev 2  -minpatch 49',
-            'suffix': '_nl1', 'iniwarplevel': '0', 'upsample': upsample_dict[1]},
+            'suffix': '_nl1', 'iniwarplevel': '0', 
+	    'upsample': upsample_dict[1], 'nl_level':1},
         2: {'qw_opts': '-blur 0 4 -inilev 5  -minpatch 23',
-            'suffix': '_nl2', 'iniwarplevel': '1', 'upsample': upsample_dict[2]},
+            'suffix': '_nl2', 'iniwarplevel': '1', 
+	    'upsample': upsample_dict[2], 'nl_level':2},
         3: {'qw_opts': '-blur 0 -2 -inilev 7  -minpatch 13',
-            'suffix': '_nl3', 'iniwarplevel': '2', 'upsample': upsample_dict[3]},
+            'suffix': '_nl3', 'iniwarplevel': '2', 
+	    'upsample': upsample_dict[3], 'nl_level':3},
         4: {'qw_opts': '-blur 0 -2 -inilev 9  -minpatch 9',
-            'suffix': '_nl4', 'iniwarplevel': '3', 'upsample': upsample_dict[4]}
+            'suffix': '_nl4', 'iniwarplevel': '3', 
+	    'upsample': upsample_dict[4], 'nl_level':4}
     }
 
     if ps.nl_level_only == -1:

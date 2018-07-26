@@ -40,8 +40,9 @@ class RegWrap():
         self.do_rigid = 1
         self.do_affine = 1
         self.do_nonlinear = 1
-        self.do_anisosmooth = 1
-
+        self.do_anisosmooth = 0
+        self.do_unifize_template = 0
+	
         self.do_rigid_only = 0   # major stages to do when doing just one
         self.do_affine_only = 0
         self.do_nl_only = 0
@@ -424,10 +425,15 @@ class RegWrap():
         if opt != None:
             self.do_skullstrip = 0
 
-        # anisotropically smooth is on by default
-        opt = self.user_opts.find_opt('-no_anisosmooth')
+        # anisotropically smooth is off by default now
+        opt = self.user_opts.find_opt('-anisosmooth')
         if opt != None:
-            self.do_anisosmooth = 0
+            self.do_anisosmooth = 1
+
+        # unifize template off by default
+        opt = self.user_opts.find_opt('-unifize_template')
+        if opt != None:
+            self.do_unifize_template = 1
 
         # rigid alignment is on by default
         opt = self.user_opts.find_opt('-no_rigid')
