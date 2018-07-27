@@ -391,9 +391,8 @@ def upsample_dset(ps, dset=None, suffix="_rs"):
 
     return o
 
+
 # resample a dataset to grid of another dataset
-
-
 def resample_dset(ps, dset, base, suffix="_rs"):
     print("resample %s" % dset.out_prefix())
     try:
@@ -428,7 +427,8 @@ def resample_dset(ps, dset, base, suffix="_rs"):
         com = ab.shell_com(cmd_str, ps.oexec, trim_length=2000)
         com.run(chdir="%s" % o.path)
         if (not o.exist() and not ps.dry_run()):
-            print("** ERROR: Could not upsample using:\n  %s\n" % cmd_str)
+            print("** ERROR: Could not resample to master using:\n  %s\n" %
+                  cmd_str)
             return None
     else:
         ps.exists_msg(o.input())
@@ -451,7 +451,7 @@ def min_dim_dset(ps, dset=None):
         min_dx = 1.0
     return (min_dx)
 
-
+# compute mean and standard deviation across a group of datasets
 def get_mean_brain(dset_list, ps, dset_glob, suffix="_rigid", preprefix=""):
     assert(dset_list[0] is not None)
     # end with a slash
@@ -486,8 +486,6 @@ def get_mean_brain(dset_list, ps, dset_glob, suffix="_rigid", preprefix=""):
 
 # change directory here
 # separate function just for dask delay
-
-
 def change_dirs(dset_list, ps, path="."):
     print("cd %s" % path)
     if(not ps.dry_run()):
@@ -496,9 +494,8 @@ def change_dirs(dset_list, ps, path="."):
     # just return this for dask
     return dset_list
 
+
 # first iteration - compute rigid mean across all subjects
-
-
 def get_rigid_mean(ps, basedset, dsetlist, delayed):
 
     aligned_brains = []
@@ -651,33 +648,45 @@ def nl_align(ps, dset, base, iniwarpset, **kwargs):
     else:
         # if just a level is provided for the initial warp, compose the name here
         if(iniwarplevel):
-            # # upsample the warp dataset in the same way as 3dQwarp upsamples data to base"
-            # if upsample:
-            #     iniwarpset = dset.new("%s_nl%s_WARP" %
-            #                           (dset.out_prefix(), iniwarplevel))
-            #     resample_dset(ps, iniwarpset, base, suffix="_us")
-            #     iniwarp = "-iniwarp %s_nl%s_WARP_us+tlrc" % (
-            #         dset.out_prefix(), iniwarplevel)
-            # # provide name of warp dataset
-            # else:
-                iniwarp = "-iniwarp %s_nl%s_WARP+tlrc" % (
-                    dset.out_prefix(), iniwarplevel)
+            # provide name of warp dataset
+            iniwarpset = dset.new("%s_nl%s_WARP" %
+                         (dset.out_prefix(), iniwarplevel))
+            iniwarp = "-iniwarp %s_nl%s_WARP+tlrc" % (
+                         dset.out_prefix(), iniwarplevel)
         # otherwise, no initial warp given, so skip the initial warp for 3dQwarp
+        # this should only happen at nl 0
         else:
             iniwarp = ""
+
+    # upsample the warp dataset
+    # only need to explicitly upsample at one level, the first upsample level
+#  ***** now done in separate step before nonlinear warping
+#    if upsample:
+#        if(iniwarpset):
+#            # resample 
+#            resample_dset(ps, iniwarpset, base, suffix="_us")
+#	    iniwarp = "-iniwarp %s_nl%s_WARP_us+tlrc" % (
+#                dset.out_prefix(), iniwarplevel)
+
     if ps.rewrite:
         rewrite = " -overwrite "
     else:
         rewrite = ""
+	
+    # ****should probably do this explicitly elsewhere****
+    # **** have to upsample base and subject input datasets ****
+    # **** so we don't need to upsample subject inputs for each
+    # **** subsequent level
     # may need to resample to higher resolution base
-    if upsample:
-        upsample_opt = "-resample"
-    else:
-        upsample_opt = ""
+#    if upsample:
+#        upsample_opt = "-resample"
+#    else:
+#        upsample_opt = ""
+
     cmd_str = """\
     3dQwarp -base {base_in} -source {input_name} \
     -prefix {out_prefix} {qw_opts} \
-    {iniwarp} {rewrite} {upsample_opt}
+    {iniwarp} {rewrite}
     """
 
     cmd_str = cmd_str.format(**locals())
@@ -724,6 +733,46 @@ def resize_warp(ps, warp, rsz_brain, suffix="_rsz"):
 
 
     return rsz_warp
+
+# upsample all subjects, current base template resize base and warps
+def upsample_subjects_bases(ps, delayed, target_brain, aa_brains,
+                    warpsetlist,resize_brain, **kwargs):
+    # upsample the mean target template
+    target_brain = delayed(upsample_dset)(ps, dset=target_brain, suffix="_us")
+
+    # make all the others match that newly upsampled target,
+    # starting with the resize template (using resample)
+    resize_brain = delayed(resample_dset)(ps, resizebase, target_brain,suffix="_us")
+
+    # need at least an empty matching list of warps as input
+    if not warpsetlist:
+        warpsetlist = [''] * len(aa_brains)
+
+    # initialize the list of output brains and warps
+    aa_brains_out = []
+    warpsetlist_out = []
+    
+    # upsample all the affine brains and the warps
+    for (aa_brain, warp) in zip(aa_brains,warpsetlist):
+        # resample the affine brain
+        aa_brain_out  = delayed(resample_dset)(
+        ps, aa_brain, target_brain, suffix="_us")
+
+        # resample the warp
+        warp_out  = delayed(resample_dset)(
+        ps, warp, target_brain, suffix="_us")
+
+        # add the outputs to the list
+        aa_brains_out.append(aa_brain_out)
+        warpsetlist_out.append(warp_out)
+
+
+    # return upsampled versions of 
+    #   mean brain, resize mean, affine_brains, warps
+    return {'mean_brain_us': target_brain, 'resize_brain_us': resize_brain, 
+            'aa_brains_us' : aa_brains_out, 
+            'warpsetlist_us': warpsetlist_out}
+
      
 def get_nl_leveln(ps, delayed, target_brain, aa_brains, warpsetlist,resize_brain, **kwargs):
 
@@ -825,6 +874,15 @@ def get_nl_mean(ps, delayed, basedset, aa_brains, warpsetlist, resize_brain):
     else:
         levels = range(ps.nl_level_only,5)
     for level in levels:
+        # upsampling only happens at one level - here if upsampling
+        if(level == ps.upsample_level):
+            us_output = upsample_subjects_bases(ps, delayed, nl_mean_brain,
+	        aa_brains, warpsetlist, resize_brain, **kwargs_dict[level])
+            nl_mean_brain = us_output['mean_brain_us']
+            resize_brain = us_output['resize_brain_us']
+            aa_brains = us_output['aa_brains_us']
+            warpsetlist = us_output['warpsetlist_us']
+	    
         nl_output = get_nl_leveln(
             ps,
             delayed,
@@ -833,12 +891,16 @@ def get_nl_mean(ps, delayed, basedset, aa_brains, warpsetlist, resize_brain):
             warpsetlist,
             resize_brain,
             **kwargs_dict[level])
+
+        # new mean brain across subjects- target for next level
         nl_mean_brain = nl_output['nl_mean_brain']
-        aa_brains = nl_output['aa_brains_out']
+        # warps from this level are used for subsequent levels
         warpsetlist = nl_output['warpsetlist_out']
+        # use output brains only for final output
+        aa_brains_out = nl_output['aa_brains_out']
 
     # return the mean brain template and the warps
-    return (nl_mean_brain, warpsetlist,aa_brains)
+    return (nl_mean_brain, warpsetlist,aa_brains_out)
 
 
 # def set_new_base(ps, dset, taskgraph, delayed):
