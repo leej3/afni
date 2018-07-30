@@ -28,6 +28,8 @@ class afni_name(object):
       self.rangesel = res['range']
       self.selquote = '"'       # selector quote
       if view in valid_new_views: self.new_view(view)
+      if not self.path :
+         self.path = os.path.abspath('./') # use full path if none exists
       return
 
    def p(self):   #Full path 

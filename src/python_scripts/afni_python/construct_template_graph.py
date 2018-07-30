@@ -24,7 +24,7 @@ def align_centers(ps, dset=None, base=None, suffix="_ac", new_dir=1):
         ndir = ab.afni_name("%s%s" % (aao.out_prefix(), aao.view))
     else:
         o = dset.new("%s%s" % (dset.out_prefix(), suffix))
-        ndir = ab.afni_name("%s%s" % (aao.out_prefix(), aao.view))
+        ndir =  o
 
     if(new_dir == 1):
         # end with a slash
@@ -742,7 +742,7 @@ def upsample_subjects_bases(ps, delayed, target_brain, aa_brains,
 
     # make all the others match that newly upsampled target,
     # starting with the resize template (using resample)
-    resize_brain = delayed(resample_dset)(ps, resizebase, target_brain,suffix="_us")
+    resize_brain = delayed(resample_dset)(ps, resize_brain, target_brain,suffix="_us")
 
     # need at least an empty matching list of warps as input
     if not warpsetlist:
