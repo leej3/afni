@@ -908,8 +908,29 @@ def get_nl_mean(ps, delayed, basedset, aa_brains, warpsetlist, resize_brain):
     # ps.basedset = dset
     # return(taskgraph)
 
-# main computations here - create graph of processes
+# warp FreeSurfer segmentation to template space
+# using affine warp and nonlinear warp
+# account for center shift if needed
+def warp_fs_seg(ps, fs_dir, aa_brain, target_brain, warp, suffix="_warped"):
+    return (fs_seg_out)
 
+# warp all the subjects' freesurfer segmentation to the final template space
+def transform_freesurf_segs(ps, delayed, basedset, aa_brains, fs_dir):
+    # warp all the freesurfer segmentations to the final template space
+    for (aa_brain, warp) in zip(aa_brains,warpsetlist):
+        # warp FreeSurfer segmentation to template space
+        fs_seg_out  = delayed(warp_fs_seg)(
+        ps, fs_dir, aa_brain, target_brain, warp, suffix="_final")
+
+        # add the outputs to the list
+        fs_segs_out.append(fs_seg_out)
+
+
+    # return final space version of freesurfer segmentation
+    return {'fs_segs_out': fs_segs_out}
+
+
+# main computations here - create graph of processes
 
 def get_task_graph(ps, delayed):
     # if ps.do_rigid_only:
