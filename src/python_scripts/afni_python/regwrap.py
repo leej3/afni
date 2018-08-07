@@ -42,6 +42,7 @@ class RegWrap():
         self.do_nonlinear = 1
         self.do_anisosmooth = 0
         self.do_unifize_template = 0
+        self.do_freesurf_mpm = 0
 	
         self.do_rigid_only = 0   # major stages to do when doing just one
         self.do_affine_only = 0

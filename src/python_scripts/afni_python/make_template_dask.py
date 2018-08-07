@@ -6,7 +6,7 @@
 #  -dsets /dsets/*.HEAD -init_base ~/abin/MNI_2009c.nii.gz -ex_mode dry_run
 #
 # command working for john:
-# python -m pdb make_template_dask.py -dsets /data/DSST/template_making/testdata/*.nii.gz -init_base /usr/local/apps/afni/current/linux_openmp_64/MNI152_2009_template.nii.gz -bokeh_port 8790
+# python -m pdb make_template_dask.py -dsets /data/DSST/template_making/testdata/*.nii.gz -init_base /usr/local/apps/afni/current/linux_centos_7_64/MNI152_2009_template.nii.gz -bokeh_port 8790
 
 daskmode = "None"  # by default, don't use dask. Just use single computer linearly
 
@@ -155,7 +155,12 @@ if (daskmode != "None"):
 
         print("starting %d workers!" % n_workers)
         cluster.start_workers(n_workers)
-        client = Client(cluster, diagnostics_port = ps.bokeh_port)
+        # client with dummy process resources limiting threads actually used by Dask client
+        # still requests hardware threads
+        client = Client(cluster, diagnostics_port = ps.bokeh_port,resources = {'foo':1})
+        # client_with_foo = Client(processes = False,
+        #    n_workers= 2,    threads_per_worker=10,    resources = {'foo':1} )
+        
         # client = Client(processes = False, Diagnostics_port = ps.bokeh_port)
         using_cluster = True
 
@@ -173,11 +178,14 @@ if (daskmode != "None"):
         else:
             n_threads = 4
 
+        # client with dummy process resources limiting threads actually used by Dask client
+        # still requests hardware threads
         # cluster = LocalCluster(n_workers=1,threads_per_worker=2)
         client = Client(processes = False,
             n_workers= n_workers,
             threads_per_worker=n_threads,
-            diagnostics_port = ps.bokeh_port
+            diagnostics_port = ps.bokeh_port,
+            resources = {'foo':1}
             )
 else:   # dask not used, so fake delayed function. Just regular, linear system
 
@@ -197,11 +205,14 @@ if __name__ == '__main__':
     # for Dask, compute "graph" and execute it later. For non-Dask, just run the program
     task_graph = construct_template_graph.get_task_graph(ps,delayed)
 
+    # if doing anything "Dasky" (multi-tasking on cluster or multi-threaded processes)
     if (daskmode != "None"):
         # task_graph = dask_job_wrapper.run(ps,delayed,client) # useful for reloading modules
+
         # The following command executes the task graph that
-        affine = client.compute(task_graph)
-        # This is a blocking call and will return the results.
+        affine = client.compute(task_graph,resources = {'foo':1})
+        
+        # This is a blocking call that waits for everything to be computed and will return the results.
         result = client.gather(affine)
         print("Really finished making template")
 

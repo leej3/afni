@@ -578,11 +578,17 @@ def get_affine_mean(ps, basedset, dsetlist, delayed):
 # could have list of outputs with list of suffixes
 
 
-def prepare_afni_output(ps, dset, suffix, master=[]):
-    try:
-        os.chdir(dset.path)
-    except:
-        os.chdir(os.path.abspath(os.path.dirname(dset)))
+def prepare_afni_output(ps, dset, suffix, master=[],path=""):
+    if not path:
+       try:
+           # path of AFNI dataset structure
+           os.chdir(dset.path)
+       except:
+           # path from name using absolute pathname conversion
+           os.chdir(os.path.abspath(os.path.dirname(dset.ppv())))
+    else:
+       os.chdir(path)
+       
     assert(dset is not None)
     o = dset.new("%s%s" % (dset.out_prefix(), suffix))
     o.path = dset.path
@@ -911,16 +917,54 @@ def get_nl_mean(ps, delayed, basedset, aa_brains, warpsetlist, resize_brain):
 # warp FreeSurfer segmentation to template space
 # using affine warp and nonlinear warp
 # account for center shift if needed
-def warp_fs_seg(ps, fs_dir, aa_brain, target_brain, warp, suffix="_warped"):
+# provide affine brain (aa_brain) for affine matrix
+# and grid (should be same grid and space as final template brain)
+# warp is nonlinear warp from 3dQwarp from affine to target
+def warp_fs_seg(ps, fs_seg, aa_brain, warp, suffix="_warped"):
+    fs_seg_out = prepare_afni_output(ps, fs_seg, suffix, path=aa_brain.path)
+
+    # change directory to aa_brain output, even with input segmentation
+    # in another directory
+    
+    # may need align centers shift.1D file too
+    # shift_mat = "*_ac_shft.1D"
+    # copy FreeSurfer segmentation to current directory,
+    # recenter first with @Align_Centers instead of adding to warps
+    # because warp including shifts is expensive in memory and performance
+    # replace segmentation with recentered version
+    # this method costs a little disk space for the extra copy of FreeSurfer
+    # segmentation
+    fs_seg = align_centers(ps, dset=fs_seg, base=aa_brain, suffix="_ac", new_dir=0)
+    
+    # affine matrix named similarly as affine dataset        
+    aff_matrix =  "%s.Xaff12.1D" % aa_brain.out_prefix()
+
+    input_name = fs_seg.ppv()
+    out_prefix = fs_seg_out.out_prefix()
+    if ps.rewrite:
+        rewrite = " -overwrite "
+    else:
+        rewrite = ""
+    master = aa_brain.prefix()
+    warp_name = warp.prefix()
+    cmd_str = """\
+        3dNwarpApply -NN -prefix {out_prefix} -master {master} -input {input_name} -nwarp \'{warp_name} {aff_matrix}\' \
+            {rewrite}
+    """
+    cmd_str = cmd_str.format(**locals())
+    # check if output dataset was created
+    fs_seg_out = run_check_afni_cmd(cmd_str, ps, fs_seg_out,
+            "Could not transform FreeSurfer segmentation using")
+
     return (fs_seg_out)
 
 # warp all the subjects' freesurfer segmentation to the final template space
-def transform_freesurf_segs(ps, delayed, basedset, aa_brains, fs_dir):
+def transform_freesurf_segs(ps, delayed, fs_segs, aa_brains, warpsetlist):
     # warp all the freesurfer segmentations to the final template space
-    for (aa_brain, warp) in zip(aa_brains,warpsetlist):
+    for (fs_seg, aa_brain, warp) in zip(fs_seg,aa_brains,warpsetlist):
         # warp FreeSurfer segmentation to template space
         fs_seg_out  = delayed(warp_fs_seg)(
-        ps, fs_dir, aa_brain, target_brain, warp, suffix="_final")
+        ps, fs_seg, aa_brain, warp, suffix="_FS_final")
 
         # add the outputs to the list
         fs_segs_out.append(fs_seg_out)
@@ -929,6 +973,14 @@ def transform_freesurf_segs(ps, delayed, basedset, aa_brains, fs_dir):
     # return final space version of freesurfer segmentation
     return {'fs_segs_out': fs_segs_out}
 
+# transform maximum probability map (MPM) atlas from 
+# FreeSurfer segmentation
+def make_freesurf_mpm(ps,
+                      delayed, fs_segs, aligned_brains, nl_warpsetlist,
+                      suffix="_FS_MPM"):
+    fs_segs_out = transform_freesurf_segs(ps,
+                      delayed, fs_segs, aligned_brains, nl_warpsetlist)
+    mpm = compute_mpm(ps, delayed, fs_segs_out)
 
 # main computations here - create graph of processes
 
@@ -977,20 +1029,32 @@ def get_task_graph(ps, delayed):
         resize_brain = ps.resizebase
     else:
         resize_brain = affine_mean_brain
-
-    task_graph = get_nl_mean(ps,
+    
+    #return (nl_mean_brain, warpsetlist,aa_brains_out)
+    
+    (nl_mean_brain, nl_warpsetlist, nl_aligned_brains) = get_nl_mean(ps,
                              delayed,
                              affine_mean_brain,
                              aligned_brains,
                              warpsetlist,
                              resize_brain
                              )
+
+    # transform maximum probability map (MPM) atlas from 
+    # FreeSurfer segmentation
+    if ps.do_freesurf_mpm :
+       task_graph = make_freesurf_mpm(ps,
+                      delayed, fs_segs, aligned_brains, nl_warpsetlist,
+                      suffix="_FS_MPM")
+    else :
+       task_graph = (nl_mean_brain, nl_warpsetlist, nl_aligned_brains)
+
 #    affine_mean_brain = delayed(get_affine_mean)(ps, aligned_brains)
 #    ps.basedset = affine_mean_brain
 #    ps.resizebase = affine_mean_brain
 #    nl_mean_brain = delayed(get_nl_mean)(ps, aligned_brains)
 
-    # nl_mean_brain is our final output
+    # nl_mean_brain template and MPM atlas are our final output
     # This is non-blocking. We can continue
     # our python session. Whenever we query the affine object
     # we will be informed of its status.
