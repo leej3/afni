@@ -56,7 +56,7 @@ class RegWrap():
         self.cluster_memory = []
         self.cluster_constraint = []
         self.cluster_walltime = []
-        self.aniso_iters = "3"
+        self.aniso_iters = "1"
         self.upsample_level = [] # no upsampling by default
         return
 

@@ -320,7 +320,7 @@ def affine_align(ps, dset, base, suffix="_aff", aff_type="affine"):
     return o
 
 
-def aniso_smooth(ps, dset=None, suffix="_as", iters="3"):
+def aniso_smooth(ps, dset=None, suffix="_as", iters="1"):
     # anisotropically smooth data
     print("anisosmooth %s" % dset.out_prefix())
     if(ps.do_anisosmooth == 0):
@@ -335,7 +335,7 @@ def aniso_smooth(ps, dset=None, suffix="_as", iters="3"):
         o = ab.afni_name("%s%s%s" % (aao.out_prefix(), suffix, aao.view))
     else:
         o = dset.new("%s%s" % (dset.out_prefix(), suffix))
-    cmd_str = "3danisosmooth -matchorig  -3D -iters %s -prefix %s -mask %s %s" %     \
+    cmd_str = "3danisosmooth -3D -iters %s -noneg -prefix %s -mask %s %s" %     \
         (iters, o.out_prefix(), dset.input(), dset.input())
     print("executing:\n %s" % cmd_str)
     if ps.ok_to_exist and o.exist():
