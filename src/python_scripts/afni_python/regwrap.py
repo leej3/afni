@@ -16,7 +16,7 @@ from afni_python.option_list import OptionList, read_options
 class RegWrap():
     def __init__(self, label):
         # software version (update for changes)
-        self.make_template_version = "0.02"
+        self.make_template_version = "0.03"
         # user assigned path for output (not used yet)
         self.output_dir = 'iterative_template_dir'
         self.ok_to_exist = 0 #Fail if weight data exists
@@ -148,6 +148,8 @@ class RegWrap():
                                 helpstr="SLURM cluster node memory minimum (20g)")
         self.valid_opts.add_opt('-warpsets', -1, [],
                                 helpstr="Names of warp datasets if doing a specified nonlinear level")
+        self.valid_opts.add_opt('-fs_seg_sets', -1, [],
+                                helpstr="Names of FreeSurfer segmentation datasets")
         self.valid_opts.add_opt('-aniso_iters', 1, [],
                                 helpstr="Number of iterations for anisotropical smoothing")
 
@@ -550,6 +552,18 @@ class RegWrap():
             else:
                  self.info_msg(
                      "Found resize base dset %s\n" % self.resizebase.input())
+
+        opt = self.user_opts.find_opt('-fs_seg_sets')
+        if(opt):
+            self.fs_seg_sets = self.user_opts.find_opt('-fs_seg_sets')
+            for fs_seg_set_name in self.fs_seg_sets.parlist:
+                check_dset = ab.afni_name(fs_seg_set_name)
+                if not check_dset.exist():
+                    self.error_msg("Could not find FreeSurfer segmentation dset\n %s "
+                                   % check_dset.input())
+                else:
+                    self.info_msg(
+                        "Found FreeSurfer segmentation dset %s\n" % check_dset.input())
 
     def __repr__(self):
         return pformat(self.__dict__)
