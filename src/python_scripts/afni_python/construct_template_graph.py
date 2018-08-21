@@ -319,7 +319,6 @@ def affine_align(ps, dset, base, suffix="_aff", aff_type="affine"):
                  repr(o), ps.oexec, trim_length=2000)
     return o
 
-
 def aniso_smooth(ps, dset=None, suffix="_as", iters="1"):
     # anisotropically smooth data
     print("anisosmooth %s" % dset.out_prefix())
@@ -827,14 +826,14 @@ def get_nl_leveln(ps, delayed, target_brain, aa_brains, warpsetlist,resize_brain
 	
     # unifize the template
     if(ps.do_unifize_template):
-        nl_mean_brain = delayed(unifize)(ps, nl_mean_brain, suffix="_un")
+        nl_mean_brain = delayed(unifize)(ps, dset=nl_mean_brain, suffix="_un")
 
     # anisotropically smooth the template too
     if(ps.aniso_iters):
         iters = ps.aniso_iters
 
     nl_mean_brain = delayed(aniso_smooth)(
-        ps, nl_mean_brain, suffix="_as", iters=iters)
+        ps, dset=nl_mean_brain, suffix="_as", iters=iters)
 
     # return resized (and possibly unifized and anisotropically smoothed) mean
     #  brain and resized warps
