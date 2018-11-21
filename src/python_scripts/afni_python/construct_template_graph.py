@@ -149,7 +149,7 @@ def unifize(ps, dset=None, suffix="_un"):
         o = ab.afni_name("%s%s%s" % (aao.out_prefix(), suffix, aao.view))
     else:
         o = dset.new("%s%s" % (dset.out_prefix(), suffix))
-    cmd_str = "3dUnifize -gm -prefix %s -input %s" %     \
+    cmd_str = "3dUnifize -gm -clfrac 0.4 -Urad 30 -prefix %s -input %s" %     \
         (o.out_prefix(), dset.input())
     print("executing:\n %s" % cmd_str)
     if ps.ok_to_exist and o.exist():
