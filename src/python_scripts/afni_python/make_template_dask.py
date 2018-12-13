@@ -157,8 +157,9 @@ if (daskmode != "None"):
         cluster.start_workers(n_workers)
         # client with dummy process resources limiting threads actually used by Dask client
         # still requests hardware threads
-        client = Client(cluster, diagnostics_port = ps.bokeh_port)
-#        client = Client(cluster, diagnostics_port = ps.bokeh_port,resources = {'foo':1})
+#        client = Client(cluster, diagnostics_port = ps.bokeh_port)
+        client = Client(cluster, diagnostics_port = ps.bokeh_port,threads_per_worker=1)
+#         resources = {'foo':1})
         # client_with_foo = Client(processes = False,
         #    n_workers= 2,    threads_per_worker=10,    resources = {'foo':1} )
         
@@ -185,9 +186,9 @@ if (daskmode != "None"):
         client = Client(processes = False,
             n_workers= n_workers,
             threads_per_worker=n_threads,
-            diagnostics_port = ps.bokeh_port
+            diagnostics_port = ps.bokeh_port,
+            resources = {'foo':1}
             )
-#            resources = {'foo':1}
             
 else:   # dask not used, so fake delayed function. Just regular, linear system
 
@@ -212,8 +213,9 @@ if __name__ == '__main__':
         # task_graph = dask_job_wrapper.run(ps,delayed,client) # useful for reloading modules
 
         # The following command executes the task graph that
-        affine = client.compute(task_graph)
-#        affine = client.compute(task_graph,resources = {'foo':1})
+#        affine = client.compute(task_graph)
+        affine = client.compute(task_graph, threads_per_worker=1)
+#                              ,resources = {'foo':1})
         
         # This is a blocking call that waits for everything to be computed and will return the results.
         result = client.gather(affine)
