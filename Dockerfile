@@ -44,7 +44,6 @@ RUN apt-get update && \
     libglib2.0-dev \
     libglw-dev \
     libinsighttoolkit3-dev \
-    libopenjpeg-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* 
 
@@ -53,7 +52,7 @@ RUN apt-get update && \
     libxmu-dev \
     libxpm-dev \
     libxt-dev  \
-    libjpeg-dev \
+    libjpeg62 \
     python-matplotlib \
     python-rpy2 \
     python-tk \
@@ -73,16 +72,16 @@ RUN \
     fi 
 
 
-ENV AFNI_ROOT=/opt/afni
+ENV AFNI_ROOT=/afni
 # Copy AFNI source code. This can invalidate the build cache.
-ADD src $AFNI_ROOT/src/
+ADD . $AFNI_ROOT/
 ADD cmake $AFNI_ROOT/cmake/
 ADD CMakeLists.txt $AFNI_ROOT/
 ADD Dockerfile $AFNI_ROOT/
 RUN  mkdir -p /build
 WORKDIR /build
 
-RUN  cmake $AFNI_ROOT -DBUILD_SHARED_LIBS=ON
+RUN  cmake $AFNI_ROOT
 RUN make -j 20 install
 # RUN apsearch -update_all_afni_help
 

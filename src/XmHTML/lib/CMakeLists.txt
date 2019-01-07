@@ -1,8 +1,8 @@
 add_subdirectory(common)
 add_subdirectory(Motif)
-
+find_package(JPEG 62 REQUIRED)
 add_library(XmHTML ${COMMON_SRCS} ${MOTIF_SRCS})
-target_link_libraries(XmHTML ${XPM_LIBRARIES})
+target_link_libraries(XmHTML ${XPM_LIBRARIES} JPEG::JPEG)
 
 install(TARGETS XmHTML
        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
