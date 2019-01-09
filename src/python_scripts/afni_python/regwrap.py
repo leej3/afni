@@ -372,9 +372,18 @@ class RegWrap():
     def version(self):
         self.info_msg("make_template_dask: %s" % self.make_template_version)
 
+    # test for OpenMP variable setting
+    def report_omp(self):
+        try:
+           omt = os.environ["OMP_NUM_THREADS"]
+           print("OMP_NUM_THREADS = %s" % omt)
+        except:
+           print("OMP_NUM_THREADS not set. OK")
+
         # copy dataset 1 to dataset 2
         # show message and check if dset1 is the same as dset2
         # return non-zero error if can not copy
+
     def copy_dset(self, dset1, dset2, message, exec_mode):
         self.info_msg(message)
         if(dset1.input() == dset2.input()):

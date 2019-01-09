@@ -635,6 +635,9 @@ def nl_align(ps, dset, base, iniwarpset, **kwargs):
     upsample = kwargs['upsample']
     qw_opts = kwargs['qw_opts']
 
+    # does the OMP_NUM_THREAD variable propagate to workers?s
+    # show current setting for OpenMP
+    ps.report_omp()
 
     # create output dataset structure
     o = prepare_afni_output(ps, dset, suffix, master=base)
@@ -858,18 +861,18 @@ def get_nl_mean(ps, delayed, basedset, aa_brains, warpsetlist, resize_brain):
     nl_mean_brain = basedset
     upsample_dict = get_upsample_val(ps.upsample_level)
     kwargs_dict = {
-        0: {'qw_opts': '-blur 0 9 -minpatch 101',
+        0: {'qw_opts': '-blur 0 9 -minpatch 101 -lite',
             'suffix': '_nl0', 'upsample': upsample_dict[0], 'nl_level':0},
-        1: {'qw_opts': '-blur 1 6 -inilev 2  -minpatch 49',
+        1: {'qw_opts': '-blur 1 6 -inilev 2  -minpatch 49 -lite',
             'suffix': '_nl1', 'iniwarplevel': '0', 
 	    'upsample': upsample_dict[1], 'nl_level':1},
-        2: {'qw_opts': '-blur 0 4 -inilev 5  -minpatch 23',
+        2: {'qw_opts': '-blur 0 4 -inilev 5  -minpatch 23 -lite',
             'suffix': '_nl2', 'iniwarplevel': '1', 
 	    'upsample': upsample_dict[2], 'nl_level':2},
-        3: {'qw_opts': '-blur 0 -2 -inilev 7  -minpatch 13',
+        3: {'qw_opts': '-blur 0 -2 -inilev 7  -minpatch 13  -lite',
             'suffix': '_nl3', 'iniwarplevel': '2', 
 	    'upsample': upsample_dict[3], 'nl_level':3},
-        4: {'qw_opts': '-blur 0 -2 -inilev 9  -minpatch 9',
+        4: {'qw_opts': '-blur 0 -2 -inilev 9  -minpatch 9  -lite',
             'suffix': '_nl4', 'iniwarplevel': '3', 
 	    'upsample': upsample_dict[4], 'nl_level':4}
     }
