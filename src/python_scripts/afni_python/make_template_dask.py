@@ -16,6 +16,8 @@ daskmode = "None"  # by default, don't use dask. Just use single computer linear
 
 import pickle
 import sys
+import time
+import os
 
 #from shutil import which
 #if not which('3dinfo'):
@@ -84,6 +86,10 @@ ps.version()
 rv = ps.get_user_opts(g_help_string)
 ps.process_input()
 if rv is not None: ps.ciao(1)
+
+# show current setting for OpenMP
+ps.report_omp()
+
 # n_workers = 3
 from dask import delayed
 # AFNI modules
@@ -120,7 +126,7 @@ if (daskmode != "None"):
         if ps.max_threads:
             n_threads = ps.max_threads
         else:
-            n_threads = 4
+            n_threads = 8
 
         # user may specifiy queue/partition
         if ps.cluster_queue:
@@ -138,30 +144,47 @@ if (daskmode != "None"):
         if ps.cluster_constraint:
             cluster_constraint = "--constraint=%s" % ps.cluster_constraint
         else:
-            cluster_constraint = "--constraint=10g"
+            pass
 
         # any user constraints for cluster walltime limits
         if ps.cluster_walltime:
             cluster_walltime = "--time=%s" % ps.cluster_walltime
         else:
-            cluster_walltime = "--time=36:00:00"
+            cluster_walltime = "--time=10:00:00"
+
+#        cluster = SLURMCluster(
+#                    queue='norm',
+#                    memory =  '8g',
+#                    processes=1,
+#                    cores = 8,
+#                    extra='--resources foo=2')
+
+#                    job_extra = ["--time=03:00:00 "],
+#                    env_extra=['export OMP_NUM_THREADS="8"'])
 
         cluster = SLURMCluster(
             queue=cluster_queue,
             memory =  cluster_memory,
             processes=1,
-            threads = 8,
-            job_extra = [cluster_constraint, cluster_walltime] )
-
+            cores = n_threads,
+            job_extra = [cluster_constraint, cluster_walltime],
+            extra = '--resources big_jobs=2',
+            env_extra=['export OMP_NUM_THREADS="%s"'%os.environ.get("OMP_NUM_THREADS","4")] 
+            )
         print("starting %d workers!" % n_workers)
         cluster.start_workers(n_workers)
         # client with dummy process resources limiting threads actually used by Dask client
         # still requests hardware threads
 #        client = Client(cluster, diagnostics_port = ps.bokeh_port)
-        client = Client(cluster, diagnostics_port = ps.bokeh_port,threads_per_worker=1)
+        client = Client(cluster, diagnostics_port = ps.bokeh_port)
+
+#        print("Waiting for workers")
+#        current_pool_size = len(client.scheduler_info()["workers"].keys())
+#        while n_workers > current_pool_size:
+#            print("Still waiting. Now have %s workers. Need %s"% (current_pool_size, n_workers))
+#            time.sleep(10)
+#            current_pool_size = len(client.scheduler_info()["workers"].keys())
 #         resources = {'foo':1})
-        # client_with_foo = Client(processes = False,
-        #    n_workers= 2,    threads_per_worker=10,    resources = {'foo':1} )
         
         # client = Client(processes = False, Diagnostics_port = ps.bokeh_port)
         using_cluster = True
@@ -187,7 +210,6 @@ if (daskmode != "None"):
             n_workers= n_workers,
             threads_per_worker=n_threads,
             diagnostics_port = ps.bokeh_port,
-            resources = {'foo':1}
             )
             
 else:   # dask not used, so fake delayed function. Just regular, linear system
@@ -214,8 +236,9 @@ if __name__ == '__main__':
 
         # The following command executes the task graph that
 #        affine = client.compute(task_graph)
-        affine = client.compute(task_graph, threads_per_worker=1)
-#                              ,resources = {'foo':1})
+        affine = client.compute(task_graph,
+            resources = {'big_jobs' : 1}
+            )
         
         # This is a blocking call that waits for everything to be computed and will return the results.
         result = client.gather(affine)
