@@ -168,7 +168,7 @@ if (daskmode != "None"):
             processes=1,
             cores = n_threads,
             job_extra = [cluster_constraint, cluster_walltime],
-            extra = '--resources big_jobs=2',
+            extra = ['--resources big_jobs=2'],
             env_extra=['export OMP_NUM_THREADS="%s"'%os.environ.get("OMP_NUM_THREADS","4")] 
             )
         print("starting %d workers!" % n_workers)
