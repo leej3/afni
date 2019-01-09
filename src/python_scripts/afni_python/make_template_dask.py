@@ -144,7 +144,7 @@ if (daskmode != "None"):
         if ps.cluster_constraint:
             cluster_constraint = "--constraint=%s" % ps.cluster_constraint
         else:
-            pass
+            cluster_constraint = " "
 
         # any user constraints for cluster walltime limits
         if ps.cluster_walltime:
