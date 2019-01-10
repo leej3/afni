@@ -169,7 +169,7 @@ if (daskmode != "None"):
             cores = n_threads,
             job_extra = [cluster_constraint, cluster_walltime],
             extra = ['--resources big_jobs=2'],
-            env_extra=['export OMP_NUM_THREADS="%s"'%os.environ.get("OMP_NUM_THREADS","4")] 
+            env_extra=['export OMP_NUM_THREADS="%s"'%os.environ.get("OMP_NUM_THREADS","8")] 
             )
         print("starting %d workers!" % n_workers)
         cluster.start_workers(n_workers)
@@ -240,7 +240,7 @@ if __name__ == '__main__':
         affine = client.compute(task_graph_dict[graph_output_key],
             resources = {'big_jobs' : 1}
             )
-        
+
         # This is a blocking call that waits for everything to be computed and will return the results.
         result = client.gather(affine)
         print("Really finished making template")
