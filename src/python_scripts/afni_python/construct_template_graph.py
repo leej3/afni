@@ -8,8 +8,10 @@ import time
 from collections import OrderedDict
 
 def align_centers(ps, dset=None, base=None, suffix="_ac", new_dir=1):
-    # align the center of a dataset to the center of another
-    # dataset like a template
+    """
+    align the center of a dataset to the center of another
+    dataset like a template
+    """
     print("align centers of %s to %s" %
           (dset.out_prefix(), base.out_prefix()))
 
@@ -67,7 +69,9 @@ def align_centers(ps, dset=None, base=None, suffix="_ac", new_dir=1):
 
 
 def automask(ps, dset=None, suffix="_am"):
-    # automask - make simple mask
+    """
+    automask - make simple mask
+    """
     print("automask %s" % dset.out_prefix())
 
     if(dset.type == 'NIFTI'):
@@ -100,7 +104,6 @@ def automask(ps, dset=None, suffix="_am"):
 
 
 def skullstrip(ps, dset=None, suffix="_ns"):
-    # skullstrip
     print("skullstrip %s" % dset.out_prefix())
     if(ps.do_skullstrip == 0):
         return dset
@@ -135,7 +138,9 @@ def skullstrip(ps, dset=None, suffix="_ns"):
 
 
 def unifize(ps, dset=None, suffix="_un"):
-    # unifize - bias-correct a dataset
+    """
+    unifize - bias-correct a dataset
+    """
     print("unifize %s" % dset.out_prefix())
     if(ps.do_unifize == 0):
         return dset
@@ -216,14 +221,12 @@ def rigid_align(ps, dset, base, suffix="_4rigid"):
     print(cmd_str)
     print('this is running')
     print("executing:\n %s" % cmd_str)
-    # import pdb;pdb.set_trace()
     if (o.exist() and ps.ok_to_exist):
         print("Output already exists. That's okay")
         return o
     elif (not (o.exist() and mat_exists) or ps.rewrite or ps.dry_run()):
         o.delete(ps.oexec)
         com = ab.shell_com(cmd_str, ps.oexec, trim_length=2000)
-        # ab.shell_com("echo Object in rigid align: %s"% repr(o), ps.oexec,trim_length=2000)
         com.run(chdir="%s" % o.path)
         if (not o.exist() and not ps.dry_run()):
             assert(False)
@@ -283,7 +286,6 @@ def affine_align(ps, dset, base, suffix="_aff", aff_type="affine"):
     print(cmd_str)
     print('this is running')
     print("executing:\n %s" % cmd_str)
-    # import pdb;pdb.set_trace()
 
     if ps.ok_to_exist and o.exist():
         print("Output already exists. That's okay")
@@ -298,7 +300,8 @@ def affine_align(ps, dset, base, suffix="_aff", aff_type="affine"):
             return None
     else:
         ps.exists_msg(o.input())
-    # may only want just rigid, so just apply warp and delete the affine output
+    # may only want just rigid, so just apply warp and delete the affine
+    # output
     if aff_type == 'rigid':
         cmd_str = """\
            rm {outaff_name}; \
@@ -320,7 +323,9 @@ def affine_align(ps, dset, base, suffix="_aff", aff_type="affine"):
     return o
 
 def aniso_smooth(ps, dset=None, suffix="_as", iters="1"):
-    # anisotropically smooth data
+    """
+    anisotropically smooth data
+    """
     print("anisosmooth %s" % dset.out_prefix())
     if(ps.do_anisosmooth == 0):
         return dset
@@ -351,11 +356,14 @@ def aniso_smooth(ps, dset=None, suffix="_as", iters="1"):
 
     return o
 
-# upsample a dataset to double its resolution - 8x number of voxels in 3D
 
 
 def upsample_dset(ps, dset=None, suffix="_rs"):
-    # resample data 2x (1/2 the voxel size)
+    """
+    upsample a dataset to double its resolution - 8x number of voxels in 3D
+    resample data 2x (1/2 the voxel size)
+    """
+
     print("upsample %s" % dset.out_prefix())
     if(not(ps.upsample_level)):
         return dset
@@ -391,8 +399,10 @@ def upsample_dset(ps, dset=None, suffix="_rs"):
     return o
 
 
-# resample a dataset to grid of another dataset
 def resample_dset(ps, dset, base, suffix="_rs"):
+    """
+    resample a dataset to grid of another dataset
+    """
     print("resample %s" % dset.out_prefix())
     try:
         os.chdir(dset.path)
@@ -435,8 +445,10 @@ def resample_dset(ps, dset, base, suffix="_rs"):
     return o
 
 
-# find smallest dimension of dataset in x,y,z
 def min_dim_dset(ps, dset=None):
+    """
+    find smallest dimension of dataset in x,y,z
+    """
     com = ab.shell_com(
         "3dAttribute DELTA %s" % dset.input(), ps.oexec, capture=1)
     if ps.dry_run():
@@ -450,8 +462,10 @@ def min_dim_dset(ps, dset=None):
         min_dx = 1.0
     return (min_dx)
 
-# compute mean and standard deviation across a group of datasets
 def get_mean_brain(dset_list, ps, dset_glob, suffix="_rigid", preprefix=""):
+    """
+    compute mean and standard deviation across a group of datasets
+    """
     assert(dset_list[0] is not None)
     # end with a slash
     print("cd %s" % ps.odir)
@@ -483,9 +497,14 @@ def get_mean_brain(dset_list, ps, dset_glob, suffix="_rigid", preprefix=""):
 
     return o
 
-# change directory here
-# separate function just for dask delay
 def change_dirs(dset_list, ps, path="."):
+    """
+    change directory here
+    separate function just for dask delay
+    but this doesn't work because it could
+    be executed on a different worker from
+    the subsequent task
+    """
     print("cd %s" % path)
     if(not ps.dry_run()):
         os.chdir(self.path)
@@ -494,8 +513,10 @@ def change_dirs(dset_list, ps, path="."):
     return dset_list
 
 
-# first iteration - compute rigid mean across all subjects
 def get_rigid_mean(ps, basedset, dsetlist, delayed):
+    """
+    first iteration - compute rigid mean across all subjects
+    """
 
     aligned_brains = []
 
@@ -503,7 +524,8 @@ def get_rigid_mean(ps, basedset, dsetlist, delayed):
     if cwd != '/':
         cwd += '/'
 
-    # from dask import delayedsetup using dask delayed
+    #  these functions are delayed using the function wrapper "delayed" from
+    #  dask to help with parallel execution
     for dset_name in dsetlist:
 
         start_dset = ab.afni_name(dset_name)
@@ -522,7 +544,6 @@ def get_rigid_mean(ps, basedset, dsetlist, delayed):
         # object we will be informed of its status.
         aligned_brains.append(af_aligned)
 
-    # print(aligned_brains)
     rigid_mean_brain = delayed(get_mean_brain)(
         aligned_brains,
         ps,
@@ -530,17 +551,15 @@ def get_rigid_mean(ps, basedset, dsetlist, delayed):
         suffix="_rigid",preprefix="tp0_")
 
     print("Configured first processing loop")
-    align_obj = (rigid_mean_brain, aligned_brains)
 
     # return the rigid mean brain template and the rigidly aligned_brains
-    # return rigid_mean_brain, aligned_brains
     return (rigid_mean_brain, aligned_brains)
-
-# 2nd iteration - compute affine mean across all subjects
 
 
 def get_affine_mean(ps, basedset, dsetlist, delayed):
-
+    """
+    2nd iteration - compute affine mean across all subjects
+    """
     aligned_brains = []
 
     cwd = os.path.abspath(os.curdir)
@@ -552,9 +571,6 @@ def get_affine_mean(ps, basedset, dsetlist, delayed):
     for dset in dsetlist:
         af_aligned = delayed(affine_align)(
             ps, dset, base=basedset, suffix="_affx")
-
-        # change back to original directory
-        # af_aligned_cd = delayed(change_dirs)(af_aligned,ps, path=cwd)
 
         #  We can continue our python session. Whenever we query the affine
         # object we will be informed of its status.
@@ -572,12 +588,14 @@ def get_affine_mean(ps, basedset, dsetlist, delayed):
     # Dask can't return two separate objects, so combine into a single tuple
     return (affine_mean_brain, aligned_brains)
 
-# prepare the output for an afni function
-#  make AFNI dataset structure based on input name, additional suffix and master dataset
-# could have list of outputs with list of suffixes
 
 
 def prepare_afni_output(ps, dset, suffix, master=[],path=""):
+    """
+    prepare the output for an afni function make AFNI dataset structure based
+    on input name, additional suffix and master dataset could
+    have list of outputs with list of suffixes
+    """
     if not path:
        try:
            # path of AFNI dataset structure
@@ -596,15 +614,15 @@ def prepare_afni_output(ps, dset, suffix, master=[],path=""):
             o.view = '+tlrc'
     return o
 
-# run afni command and check if afni output dataset exists
-# return the same output dataset if it exists, otherwise return None
-# could have list of outputs
 
 
 def run_check_afni_cmd(cmd_str, ps, o, message):
-
+    """
+    run afni command and check if afni output dataset exists
+    return the same output dataset if it exists, otherwise return None
+    could have list of outputs
+    """
     print("command:\n %s" % cmd_str)
-    # import pdb;pdb.set_trace()
     if ps.ok_to_exist and o.exist():
         print("Output already exists. That's okay")
     elif (not (o.exist()) or ps.rewrite or ps.dry_run()):
@@ -619,14 +637,16 @@ def run_check_afni_cmd(cmd_str, ps, o, message):
         ps.exists_msg(o.input())
     return o
 
-# nonlinearly align dataset to a base dataset
-# initial warp provided by either iniwarpset as an AFNI dataset
-# or by iniwarplevel and composed by name dset_nlx_WARP+tlrc
-# with x as a digit string here (0,1,2,3)
-# returns warped dataset and WARP dataset of deformation distances
 
 
 def nl_align(ps, dset, base, iniwarpset, **kwargs):
+    """
+    nonlinearly align dataset to a base dataset
+    initial warp provided by either iniwarpset as an AFNI dataset
+    or by iniwarplevel and composed by name dset_nlx_WARP+tlrc
+    with x as a digit string here (0,1,2,3)
+    returns warped dataset and WARP dataset of deformation distances
+    """
     suffix=kwargs['suffix']
     try:
        iniwarplevel = kwargs['iniwarplevel']
@@ -643,10 +663,7 @@ def nl_align(ps, dset, base, iniwarpset, **kwargs):
     o = prepare_afni_output(ps, dset, suffix, master=base)
 
     # make warp dataset structure too
-############
-# NOPE THIS SHOULD JUST BE WARPED_BRAINS, and this function can do the iteration.
     warpset = dset.new("%s%s_WARP" % (dset.out_prefix(), suffix))
-##############
     input_name = dset.pv()
     out_prefix = o.out_prefix()
     base_in = base.input()
@@ -666,37 +683,16 @@ def nl_align(ps, dset, base, iniwarpset, **kwargs):
         else:
             iniwarp = ""
 
-    # upsample the warp dataset
-    # only need to explicitly upsample at one level, the first upsample level
-#  ***** now done in separate step before nonlinear warping
-#    if upsample:
-#        if(iniwarpset):
-#            # resample 
-#            resample_dset(ps, iniwarpset, base, suffix="_us")
-#	    iniwarp = "-iniwarp %s_nl%s_WARP_us+tlrc" % (
-#                dset.out_prefix(), iniwarplevel)
-
     if ps.rewrite:
         rewrite = " -overwrite "
     else:
         rewrite = ""
 	
-    # ****should probably do this explicitly elsewhere****
-    # **** have to upsample base and subject input datasets ****
-    # **** so we don't need to upsample subject inputs for each
-    # **** subsequent level
-    # may need to resample to higher resolution base
-#    if upsample:
-#        upsample_opt = "-resample"
-#    else:
-#        upsample_opt = ""
-
     cmd_str = """\
     3dQwarp -base {base_in} -source {input_name} \
     -prefix {out_prefix} {qw_opts} \
     {iniwarp} {rewrite}
     """
-
     cmd_str = cmd_str.format(**locals())
 
     # check if output dataset was created
@@ -704,19 +700,23 @@ def nl_align(ps, dset, base, iniwarpset, **kwargs):
 
     return {'aa_brain' : o,'warp': warpset}
 
-# resize warp deformation dataset by concatenating affine matrix
 def resize_warp(ps, warp, rsz_brain, suffix="_rsz"):
-# help for 3dNwarpCat shows this order for its use with
-# first an auto_tlrc affine alignment followed by a nonlinear warp with 3dQwarp
-# Since we are doing the opposite order, we can reverse the order here
-# 3dNwarpCat -prefix Fred_total_WARP -warp1 Fred_WARP+tlrc.HEAD -warp2 Fred.Xat.1D 
+    """
+    resize warp deformation dataset by concatenating affine matrix
+    help for 3dNwarpCat shows this order for its use with
+    first an auto_tlrc affine alignment followed by a nonlinear warp with 3dQwarp
+    Since we are doing the opposite order, we can reverse the order here
+    3dNwarpCat -prefix Fred_total_WARP -warp1 Fred_WARP+tlrc.HEAD -warp2 Fred.Xat.1D 
 
-#  3dNwarpCat -prefix Fred_total_WARP -warp2 Fred_WARP+tlrc.HEAD -warp1 Fred.Xat.1D
-#
-# Note, this like 3dNwarpCalc's nonlinear warp concatenation assume the same grid
-#   and center for the combination of the affine with nonlinear warps
-#   Because we have aligned centers first, this works.
-# Use 3dNwarpApply for distant warps
+    3dNwarpCat -prefix Fred_total_WARP -warp2 Fred_WARP+tlrc.HEAD -warp1 Fred.Xat.1D
+    
+    Note, this like 3dNwarpCalc's nonlinear warp concatenation assume the same grid
+    and center for the combination of the affine with nonlinear warps
+    Because we have aligned centers first, this works.
+    """
+
+
+    # Use 3dNwarpApply for distant warps
     # create output dataset structure
     rsz_warp = prepare_afni_output(ps, warp, suffix)
     
@@ -742,9 +742,12 @@ def resize_warp(ps, warp, rsz_brain, suffix="_rsz"):
 
     return rsz_warp
 
-# upsample all subjects, current base template resize base and warps
 def upsample_subjects_bases(ps, delayed, target_brain, aa_brains,
                     warpsetlist,resize_brain, **kwargs):
+    """
+    upsample all subjects, current base template resize base and warps
+    """
+
     # upsample the mean target template
     target_brain = delayed(upsample_dset)(ps, dset=target_brain, suffix="_us")
 
@@ -784,14 +787,6 @@ def upsample_subjects_bases(ps, delayed, target_brain, aa_brains,
      
 def get_nl_leveln(ps, delayed, target_brain, aa_brains, warpsetlist,resize_brain, **kwargs):
 
-    # if upsample:
-    #     target_brain = delayed(upsample_dset)(ps, dset=target_brain, suffix="_rs")
-    #     resize_brain = delayed(upsample_dset)(
-    #         ps, dset=resizebase, suffix="_rs")
-    #     warpsetlist = delayed(get_upsample_dset_list)(warpsetlist)
-    # need get_upsample_dset_list function
-
-
     if not warpsetlist:
         warpsetlist = [''] * len(aa_brains)
     nl_level = kwargs["nl_level"]	
@@ -820,7 +815,6 @@ def get_nl_leveln(ps, delayed, target_brain, aa_brains, warpsetlist,resize_brain
     nl_mean_brain = delayed(affine_align)(ps, nl_mean_brain, resize_brain,
                                           suffix="_rsz", aff_type="affine")      
     
-    # nl_mean_brain = resize_template(nl_mean_brain, ps.resizebase)
     # resize the warps too by concatenating resize affine transformation to warp
     warpsetlist_out2 = []
     for warp in (warpsetlist_out):
@@ -843,9 +837,11 @@ def get_nl_leveln(ps, delayed, target_brain, aa_brains, warpsetlist,resize_brain
     return {'nl_mean_brain': nl_mean_brain, 'aa_brains_out' : aa_brains_out,
             'warpsetlist_out': warpsetlist_out2}
 
-# 3rd iteration - set of nonlinear iterations - compute nonlinear mean across all subjects
 
 def get_upsample_val(upsample_level):
+    """
+    3rd iteration - set of nonlinear iterations - compute nonlinear mean across all subjects
+    """
     upsample_dict = {}
     for ii in range(5):
         if ii == upsample_level:
@@ -855,9 +851,12 @@ def get_upsample_val(upsample_level):
     return upsample_dict
 
 def get_nl_mean(ps, delayed, basedset, aa_brains, warpsetlist, resize_brain):
-    # do 5 levels of nonlinear warping
-    # at each level, warp a smaller neighborhood of voxels
-    # following pattern of @toMNI_Qwarpar
+    """
+    do 5 levels of nonlinear warping
+    at each level, warp a smaller neighborhood of voxels
+    following pattern of @toMNI_Qwarpar
+    """
+
     nl_mean_brain = basedset
     upsample_dict = get_upsample_val(ps.upsample_level)
     kwargs_dict = {
@@ -911,20 +910,16 @@ def get_nl_mean(ps, delayed, basedset, aa_brains, warpsetlist, resize_brain):
     return (nl_mean_brain, warpsetlist,aa_brains_out)
 
 
-# def set_new_base(ps, dset, taskgraph, delayed):
-    # instead of doing this lets just pass in the base image as an argument
-    # ps.basedset = dset
-    # return(taskgraph)
-
-# warp FreeSurfer segmentation to template space
-# using affine warp and nonlinear warp
-# account for center shift if needed
-# provide affine brain (aa_brain) for affine matrix
-# and grid (should be same grid and space as final template brain)
-# warp is nonlinear warp from 3dQwarp from affine to target
 def warp_fs_seg(ps, fs_seg, aa_brain, warp, suffix="_warped"):
     fs_seg_out = prepare_afni_output(ps, fs_seg, suffix, path=aa_brain.path)
-
+    """
+    warp FreeSurfer segmentation to template space
+    using affine warp and nonlinear warp
+    account for center shift if needed
+    provide affine brain (aa_brain) for affine matrix
+    and grid (should be same grid and space as final template brain)
+    warp is nonlinear warp from 3dQwarp from affine to target
+    """
     # change directory to aa_brain output, even with input segmentation
     # in another directory
     
@@ -960,7 +955,6 @@ def warp_fs_seg(ps, fs_seg, aa_brain, warp, suffix="_warped"):
 
     return (fs_seg_out)
 
-# warp all the subjects' freesurfer segmentation to the final template space
 def transform_freesurf_segs(ps, delayed, fs_segs, aa_brains, warpsetlist):
     # warp all the freesurfer segmentations to the final template space
     fs_segs_out = []
@@ -976,17 +970,20 @@ def transform_freesurf_segs(ps, delayed, fs_segs, aa_brains, warpsetlist):
     # return final space version of freesurfer segmentation
     return {'fs_segs_out': fs_segs_out}
 
-# compute probability of each region
 def compute_probmaps(ps, delayed, fs_segs):
-   # for every region, find how often it occurs at each voxel
-   # maybe start in new temporary directory to keep all
-   # the region prob. maps.
-   # maybe combine probmaps into one dataset, but then 3dMean
-   # wouldn't be used to compute max, argmax.
-   # get roilist from header of fs_segs dataset
-   # must use renum dataset generated by @SUMA_Make_spec_FS 
-   # to get consistent numbering across subjects
-   fs_probmaps = []
+    """
+    compute probability of each region
+    for every region, find how often it occurs at each voxel
+    maybe start in new temporary directory to keep all
+    the region prob. maps.
+    maybe combine probmaps into one dataset, but then 3dMean
+    wouldn't be used to compute max, argmax.
+    get roilist from header of fs_segs dataset
+    must use renum dataset generated by @SUMA_Make_spec_FS 
+    to get consistent numbering across subjects
+
+   """
+    fs_probmaps = []
    # for roi in roilist:
        # compute mean by region index
        # 3dMean fs_segs'[roi]'
@@ -996,61 +993,39 @@ def compute_probmaps(ps, delayed, fs_segs):
        # fs_probmap = delayed(compute_mean_index(ps,roi,fs_segs, suffix="_pm")
        # fs_probmaps.append(fs_probmap)
 
-   return fs_probmaps
+    return fs_probmaps
 
-# compute maximum probability map (MPM) across all probability maps
-# i.e. the region index that occurs the most often at each voxel
 def compute_mpm(ps, delayed, fs_probmaps):
-    # compute max probability and the index of the maximum probability
-    #  while not considering probabilities below threshold
-    #  **** need to modify 3dMean to compute argmax+1 (or argmax) with min threshold
-    # modally smooth resulting map
-    # return index of maximum at each voxel map (the maximum probability map)
+    """
+    compute maximum probability map (MPM) across all probability maps
+    i.e. the region index that occurs the most often at each voxel
+    compute max probability and the index of the maximum probability
+     while not considering probabilities below threshold
+     **** need to modify 3dMean to compute argmax+1 (or argmax) with min threshold
+    modally smooth resulting map
+    return index of maximum at each voxel map (the maximum probability map)
+    """
     fs_segs_out = []
     return {'fs_segs_out': fs_segs_out}
 
 
 
-# transform maximum probability map (MPM) atlas from 
-# FreeSurfer segmentation
 def make_freesurf_mpm(ps,
                       delayed, fs_segs, aligned_brains, nl_warpsetlist,
                       suffix="_FS_MPM"):
+    """
+    transform maximum probability map (MPM) atlas from 
+    FreeSurfer segmentation
+    """
     fs_segs_out = transform_freesurf_segs(ps,
                       delayed, fs_segs, aligned_brains, nl_warpsetlist)
     mpm = compute_mpm(ps, delayed, fs_segs_out)
 
-# main computations here - create graph of processes
 
 def get_task_graph(ps, delayed):
-    # if ps.do_rigid_only:
-    #     (rigid_mean_brain, aligned_brains) = get_rigid_mean(ps,basedset, dsetlist, delayed)
-    #     return task_graph
-    # if ps.do_affine_only:
-    #     dsetlist = []
-    #     # convert names of datasets into dataset list structure
-    #     for dset_name in ps.dsets.parlist:
-    #         start_dset = ab.afni_name(dset_name)
-    #         dsetlist.append(start_dset)
-    #     task_graph = get_affine_mean(ps,ps.basedset, dsetlist, delayed)
-    #     return task_graph
-    # if ps.do_nl_only:
-    #     if(ps.resizebase is not None):
-    #         ps.resizebase = ps.basedset
-    #     dsetlist = []
-    #     # convert names of datasets into dataset list structure
-    #     for dset_name in ps.dsets.parlist:
-    #         start_dset = ab.afni_name(dset_name)
-    #         dsetlist.append(start_dset)
-    #     warpsetlist = []
-    #     # convert names of warp datasets into dataset list structure
-    #     if(ps.warpsets and ps.warpsets.parlist):
-    #         for dset_name in ps.warpsets.parlist:
-    #             start_dset = ab.afni_name(dset_name)
-    #             warpsetlist.append(start_dset)
-
-    #     task_graph = get_nl_mean(ps, dsetlist, warpsetlist, delayed)
-    #     return task_graph
+    """
+    main computations here - create graph of processes
+    """
     dsetlist = ps.dsets.parlist
     if ps.warpsets:
         warpsetlist = ps.warpsets.parlist
@@ -1059,7 +1034,6 @@ def get_task_graph(ps, delayed):
 
     (rigid_mean_brain, aligned_brains) = get_rigid_mean(
         ps, ps.basedset, dsetlist, delayed)
-    # task_graph = set_new_base(ps, rigid_mean_brain, aligned_brains, delayed)
     (affine_mean_brain, aligned_brains) = get_affine_mean(
         ps, rigid_mean_brain, aligned_brains, delayed)
 
@@ -1068,7 +1042,6 @@ def get_task_graph(ps, delayed):
     else:
         resize_brain = affine_mean_brain
     
-    #return (nl_mean_brain, warpsetlist,aa_brains_out)
     
     (nl_mean_brain, nl_warpsetlist, nl_aligned_brains) = get_nl_mean(ps,
                              delayed,
@@ -1093,11 +1066,6 @@ def get_task_graph(ps, delayed):
         ('nl_warpsetlist', nl_warpsetlist),
         ('nl_aligned_brains',nl_aligned_brains)
         ])
-
-#    affine_mean_brain = delayed(get_affine_mean)(ps, aligned_brains)
-#    ps.basedset = affine_mean_brain
-#    ps.resizebase = affine_mean_brain
-#    nl_mean_brain = delayed(get_nl_mean)(ps, aligned_brains)
 
     # nl_mean_brain template and MPM atlas are our final output
     # This is non-blocking. We can continue
