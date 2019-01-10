@@ -228,7 +228,8 @@ else:   # dask not used, so fake delayed function. Just regular, linear system
 if __name__ == '__main__':
     # freeze_support()
     # for Dask, compute "graph" and execute it later. For non-Dask, just run the program
-    task_graph = construct_template_graph.get_task_graph(ps,delayed)
+    task_graph_dict = construct_template_graph.get_task_graph(ps,delayed)
+    graph_output_key = list(task_graph_dict.keys())[-1]
 
     # if doing anything "Dasky" (multi-tasking on cluster or multi-threaded processes)
     if (daskmode != "None"):
@@ -236,7 +237,7 @@ if __name__ == '__main__':
 
         # The following command executes the task graph that
 #        affine = client.compute(task_graph)
-        affine = client.compute(task_graph,
+        affine = client.compute(task_graph_dict[graph_output_key],
             resources = {'big_jobs' : 1}
             )
         

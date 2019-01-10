@@ -5,7 +5,7 @@ import afni_python.afni_base as ab
 from glob import glob
 import os
 import time
-
+from collections import OrderedDict
 
 def align_centers(ps, dset=None, base=None, suffix="_ac", new_dir=1):
     # align the center of a dataset to the center of another
@@ -963,7 +963,8 @@ def warp_fs_seg(ps, fs_seg, aa_brain, warp, suffix="_warped"):
 # warp all the subjects' freesurfer segmentation to the final template space
 def transform_freesurf_segs(ps, delayed, fs_segs, aa_brains, warpsetlist):
     # warp all the freesurfer segmentations to the final template space
-    for (fs_seg, aa_brain, warp) in zip(fs_seg,aa_brains,warpsetlist):
+    fs_segs_out = []
+    for (fs_seg, aa_brain, warp) in zip(fs_segs,aa_brains,warpsetlist):
         # warp FreeSurfer segmentation to template space
         fs_seg_out  = delayed(warp_fs_seg)(
         ps, fs_seg, aa_brain, warp, suffix="_FS_final")
@@ -1005,6 +1006,7 @@ def compute_mpm(ps, delayed, fs_probmaps):
     #  **** need to modify 3dMean to compute argmax+1 (or argmax) with min threshold
     # modally smooth resulting map
     # return index of maximum at each voxel map (the maximum probability map)
+    fs_segs_out = []
     return {'fs_segs_out': fs_segs_out}
 
 
@@ -1078,12 +1080,19 @@ def get_task_graph(ps, delayed):
 
     # transform maximum probability map (MPM) atlas from 
     # FreeSurfer segmentation
-    if ps.do_freesurf_mpm :
-       task_graph = make_freesurf_mpm(ps,
+    if ps.do_freesurf_mpm:
+        raise ValueError('Using do_freesurf_mpm is not yet implemented because fs_segs has not been defined.')
+        # this also needs to generate a task_graph_dict
+        freesurf_mpm = make_freesurf_mpm(ps,
                       delayed, fs_segs, aligned_brains, nl_warpsetlist,
                       suffix="_FS_MPM")
+
     else :
-       task_graph = (nl_mean_brain, nl_warpsetlist, nl_aligned_brains)
+       task_graph_dict = OrderedDict([
+        ('nl_mean_brain', nl_mean_brain),
+        ('nl_warpsetlist', nl_warpsetlist),
+        ('nl_aligned_brains',nl_aligned_brains)
+        ])
 
 #    affine_mean_brain = delayed(get_affine_mean)(ps, aligned_brains)
 #    ps.basedset = affine_mean_brain
@@ -1096,4 +1105,4 @@ def get_task_graph(ps, delayed):
     # we will be informed of its status.
 
     print("Configured first processing loop")
-    return task_graph
+    return task_graph_dict
