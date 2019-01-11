@@ -127,7 +127,7 @@ if (daskmode != "None"):
         if ps.cluster_walltime:
             cluster_walltime = "--time=%s" % ps.cluster_walltime
         else:
-            cluster_walltime = "--time=10:00:00"
+            cluster_walltime = "--time=20:00:00"
 
         cluster = SLURMCluster(
             queue=cluster_queue,
@@ -138,9 +138,10 @@ if (daskmode != "None"):
             extra = ['--resources big_jobs=2'],
             env_extra=['export OMP_NUM_THREADS="%s"'%os.environ.get("OMP_NUM_THREADS","8")] 
             )
+
         print("starting %d workers!" % n_workers)
         cluster.start_workers(n_workers)
-        client = Client(cluster, diagnostics_port = ps.bokeh_port)
+        client = Client(cluster, diagnostics_port=ps.bokeh_port)
         using_cluster = True
 
     else:
