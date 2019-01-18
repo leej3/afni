@@ -128,7 +128,8 @@ if (daskmode != "None"):
             cluster_walltime = "--time=%s" % ps.cluster_walltime
         else:
             cluster_walltime = "--time=20:00:00"
-
+        omp_count = os.environ.get("OMP_NUM_THREADS","8")
+        print("OMP_NUM_THREADS being passed to the dask cluster: %s"% omp_count)
         cluster = SLURMCluster(
             queue=cluster_queue,
             memory =  cluster_memory,
@@ -136,12 +137,12 @@ if (daskmode != "None"):
             cores = n_threads,
             job_extra = [cluster_constraint, cluster_walltime],
             extra = ['--resources big_jobs=2'],
-            env_extra=['export OMP_NUM_THREADS="%s"'%os.environ.get("OMP_NUM_THREADS","8")] 
+            env_extra=['export OMP_NUM_THREADS="%s"'% omp_count] 
             )
 
         print("starting %d workers!" % n_workers)
         cluster.start_workers(n_workers)
-        client = Client(cluster, diagnostics_port=ps.bokeh_port)
+        client = Client(cluster)
         print(client.scheduler)
         using_cluster = True
 
