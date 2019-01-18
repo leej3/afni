@@ -142,6 +142,7 @@ if (daskmode != "None"):
         print("starting %d workers!" % n_workers)
         cluster.start_workers(n_workers)
         client = Client(cluster, diagnostics_port=ps.bokeh_port)
+        print(client.scheduler)
         using_cluster = True
 
     else:
