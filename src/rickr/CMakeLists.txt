@@ -15,7 +15,7 @@ add_executable(column_cat column_cat.c)
 #	PUBLIC ${RICKR_INCLUDE_DIRS}
 #)
 
-target_link_libraries(file_tool PUBLIC m nifti2)
+target_link_libraries(file_tool PUBLIC m NIFTI::nifti2)
 #target_link_libraries(Imon m)
 
 add_library(rickr OBJECT r_new_resam_dset.c r_idisp.c r_misc.c)
@@ -24,7 +24,7 @@ target_include_directories(rickr
   PRIVATE 
     $<TARGET_PROPERTY:converted_from_fortran,INTERFACE_INCLUDE_DIRECTORIES>
     $<TARGET_PROPERTY:coxplot,INTERFACE_INCLUDE_DIRECTORIES>
-    $<TARGET_PROPERTY:nifti2,INTERFACE_INCLUDE_DIRECTORIES>
+    $<TARGET_PROPERTY:NIFTI::nifti2,INTERFACE_INCLUDE_DIRECTORIES>
 
   )
 
@@ -34,3 +34,4 @@ install(TARGETS column_cat serial_helper tokens file_tool
        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )  
+add_library(AFNI::rickr ALIAS rickr)

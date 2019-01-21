@@ -142,7 +142,7 @@ endif(USE_GIFTI)
 
 option(CHECK_FRAME_BUFFER "do not check the framebuffer before rendering (might be buggy)" YES)
 if(NOT CHECK_FRAME_BUFFER)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DGL_NO_CHECK_FRAME_BUFFER")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DGL_NO_CHECK_FRAME_BUFFER")
 endif(NOT CHECK_FRAME_BUFFER)
 
 file(GLOB AFOBJS "afni*.c")
@@ -263,11 +263,11 @@ add_library(afobj OBJECT ${AFOBJS})
 add_executable(afni $<TARGET_OBJECTS:afobj>)
 foreach(target Xphace afni_open aiv)
   add_library(${target} ${target}.c)
-  target_include_directories(${target} PUBLIC ${NIFTI_INCLUDE_DIRS} ${COXPLOT_INCLUDE_DIRS})
+  target_include_directories(${target} PUBLIC $<TARGET_PROPERTY:NIFTI::nifti2,INTERFACE_INCLUDE_DIRECTORIES> ${COXPLOT_INCLUDE_DIRS})
 endforeach(target)
 
 add_library(mri ${MRI_OBJS} ${THD_OBJS} ${EDT_OBJS} ${CS_OBJS} ${SUMA_OBJS} ${MISC_OBJS} ${SOMEAFOBJS} 
-  ${AUDIO_OBJS} $<TARGET_OBJECTS:niml::niml> $<TARGET_OBJECTS:rickr>)
+  ${AUDIO_OBJS} $<TARGET_OBJECTS:niml::niml> $<TARGET_OBJECTS:AFNI::rickr>)
 add_library(mrix display.c imseq.c bbox.c xim.c xutil.c xutil_webber.c LiteClue.c)
 add_library(parser OBJECT parser.c parser_int.c)
 add_library(plug_drealtime plug_realtime.c)
@@ -369,14 +369,18 @@ set_target_properties(afni PROPERTIES PUBLIC_HEADER "${AFNI_HEADERS}")
 target_include_directories(3dDeconvolve PUBLIC ${COXPLOT_INCLUDE_DIRS})
 target_include_directories(3dDeconvolve_f PUBLIC ${COXPLOT_INCLUDE_DIRS})
 target_include_directories(3dMSE PUBLIC ${COXPLOT_INCLUDE_DIRS})
-target_include_directories(3dretroicor PUBLIC ${COXPLOT_INCLUDE_DIRS} ${CONVERTED_FROM_FORTRAN_INCLUDE_DIRS} ${NIFTI_INCLUDE_DIRS})
+target_include_directories(3dretroicor PUBLIC ${COXPLOT_INCLUDE_DIRS} ${CONVERTED_FROM_FORTRAN_INCLUDE_DIRS} $<TARGET_PROPERTY:NIFTI::nifti2,INTERFACE_INCLUDE_DIRECTORIES>)
 target_include_directories(3DEdge PUBLIC ${CONVERTED_FROM_FORTRAN_INCLUDE_DIRS} ${COXPLOT_INCLUDE_DIRS})
 target_include_directories(SUMA PUBLIC ${CONVERTED_FROM_FORTRAN_INCLUDE_DIRS} ${COXPLOT_INCLUDE_DIRS} ${3DEDGE_INCLUDE_DIRS})
 target_include_directories(coxplot PUBLIC ${CONVERTED_FROM_FORTRAN_INCLUDE_DIRS} ${COXPLOT_INCLUDE_DIRS})
 target_include_directories(eispack PUBLIC ${CONVERTED_FROM_FORTRAN_INCLUDE_DIRS})
-target_include_directories(mri  PUBLIC  ${3DEDGE_INCLUDE_DIRS} ${AUDIO_INCLUDE_DIRS} ${COXPLOT_INCLUDE_DIRS})
-target_include_directories(mrix PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${XMHTML_INCLUDE_DIRS} ${GIFTI_INCLUDE_DIRS} ${COXPLOT_INCLUDE_DIRS})
-target_include_directories(afobj PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${NIFTI_INCLUDE_DIRS} ${XMHTML_INCLUDE_DIRS} ${GIFTI_INCLUDE_DIRS} ${COXPLOT_INCLUDE_DIRS})
+target_include_directories(mri  PUBLIC  ${3DEDGE_INCLUDE_DIRS} ${AUDIO_INCLUDE_DIRS} ${COXPLOT_INCLUDE_DIRS} $<TARGET_PROPERTY:AFNI::rickr,INTERFACE_INCLUDE_DIRECTORIES> )
+target_include_directories(mrix PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} $<TARGET_PROPERTY:AFNI::XmHTML,INTERFACE_INCLUDE_DIRECTORIES> ${GIFTI_INCLUDE_DIRS} ${COXPLOT_INCLUDE_DIRS})
+target_include_directories(afobj 
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} 
+  $<TARGET_PROPERTY:NIFTI::nifti2,INTERFACE_INCLUDE_DIRECTORIES>
+  $<TARGET_PROPERTY:AFNI::XmHTML,INTERFACE_INCLUDE_DIRECTORIES> 
+  ${GIFTI_INCLUDE_DIRS} ${COXPLOT_INCLUDE_DIRS})
 target_include_directories(parser PUBLIC ${NIML_INCLUDE_DIRS} ${CONVERTED_FROM_FORTRAN_INCLUDE_DIRS} ${COXPLOT_INCLUDE_DIRS} )
 target_include_directories(to3d PUBLIC ${MOTIF_INCLUDE_DIR} )
 target_include_directories(1dplot PUBLIC  ${XT_INCLUDE_DIR} ${X11_INCLUDE_DIRS} )
@@ -386,23 +390,23 @@ foreach(target 3dfim 3dTfitter FD2 fim2 imreg gwarp 3danisosmooth 3dmaxima
 		plug_drealtime plug_maxima plug_retroicor
 )
 
-   target_link_libraries(${target} PUBLIC mri mrix nifticdf)
+   target_link_libraries(${target} PUBLIC mri mrix NIFTI::nifticdf)
 endforeach(target)
 target_link_libraries(3dretroicor PUBLIC mri converted_from_fortran mrix coxplot)
 target_link_libraries(3dNLfim PUBLIC mri mrix ${CMAKE_DL_LIBS})
 
-target_link_libraries(parser PUBLIC coxplot libheaders)
+target_link_libraries(parser PUBLIC coxplot libheaders NIFTI::nifti2)
 target_link_libraries(1dgrayplot PUBLIC mri coxplot ${XT_LIBRARIES})
-target_link_libraries(1dplot PUBLIC mrix mri nifti2 ${X11_Xt_LIB} ${X11_LIBRARIES})
+target_link_libraries(1dplot PUBLIC mrix mri NIFTI::nifti2 ${X11_Xt_LIB} ${X11_LIBRARIES})
 target_link_libraries(3dDeconvolve PUBLIC mri coxplot)
 target_link_libraries(3dDeconvolve_f PUBLIC mri coxplot)
 target_link_libraries(3dDeconvolve_n PUBLIC mri coxplot)
-target_link_libraries(Xphace PUBLIC mrix nifti2)
+target_link_libraries(Xphace PUBLIC mrix NIFTI::nifti2)
 target_link_libraries(afobj PUBLIC ${XT_LIBRARIES} mri mrix coxplot)
 target_link_libraries(afni PUBLIC mri ${CMAKE_DL_LIBS})
 target_link_libraries(afni_open PUBLIC mri)
-target_link_libraries(aiv PUBLIC mrix nifti2)
-# target_include_directories(aiv ${NIFTI_INCLUDE_DIRS})
+target_link_libraries(aiv PUBLIC mrix NIFTI::nifti2)
+# target_include_directories(aiv $<TARGET_PROPERTY:NIFTI::nifti2,INTERFACE_INCLUDE_DIRECTORIES>)
 
 target_link_libraries(mri PUBLIC  libheaders mrix nifti2 nifticdf eispack netcdf m znz giftiio 3DEdge volpack
    ${XMHTML_LIBRARIES} converted_from_fortran ${XT_LIBRARIES})
@@ -424,7 +428,7 @@ target_link_libraries(3dresample PUBLIC mri)
 
 add_executable(3dTSgen 3dTSgen.c)
 target_include_directories(3dTSgen PUBLIC ${COXPLOT_INCLUDE_DIRS} ${CONVERTED_FROM_FORTRAN_INCLUDE_DIRS})
-target_link_libraries(3dTSgen mri nifti2 converted_from_fortran coxplot ${CMAKE_DL_LIBS})
+target_link_libraries(3dTSgen mri NIFTI::nifti2 converted_from_fortran coxplot ${CMAKE_DL_LIBS})
 
 
 

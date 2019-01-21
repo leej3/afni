@@ -57,6 +57,6 @@ target_include_directories(SUMA
   PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
   PRIVATE
-    $<TARGET_PROPERTY:rickr,INTERFACE_INCLUDE_DIRECTORIES>
+    $<TARGET_PROPERTY:AFNI::rickr,INTERFACE_INCLUDE_DIRECTORIES>
      )
-target_link_libraries(SUMA ply ${OPENGL_LIBRARIES} nifti2 nifticdf)
+target_link_libraries(SUMA ply ${OPENGL_LIBRARIES} NIFTI::nifti2 NIFTI::nifticdf)

@@ -37,7 +37,7 @@ add_library(converted_from_fortran ${CONVERTED_FROM_FORTRAN_SRCS})
 
 target_include_directories(converted_from_fortran PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 ${NIML_INCLUDE_DIRS} ${RICKR_INCLUDE_DIRS})
-target_link_libraries(converted_from_fortran nifticdf)
+target_link_libraries(converted_from_fortran NIFTI::nifticdf)
 install(TARGETS converted_from_fortran
        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

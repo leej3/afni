@@ -11,9 +11,9 @@ target_include_directories(3DEdge
   PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
   PRIVATE 
-    $<TARGET_PROPERTY:rickr,INTERFACE_INCLUDE_DIRECTORIES>)
+    $<TARGET_PROPERTY:AFNI::rickr,INTERFACE_INCLUDE_DIRECTORIES>)
  
-target_link_libraries(3DEdge nifti2 nifticdf)
+target_link_libraries(3DEdge NIFTI::nifti2 NIFTI::nifticdf)
 install(TARGETS 3DEdge
        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
