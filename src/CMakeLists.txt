@@ -54,27 +54,31 @@ set(CPACK_SOURCE_IGNORE_FILES
 
 
 
-### STEP 1 -- set build configuration items to override nifti_clib defaults
+# Find or fetch nifti_clib
 
-set(NIFTI_PACKAGE_PREFIX "" CACHE STRING "Set the nifti package prefix" FORCE)
+# a prefix can be used to avoid collisions with pre-existsing installations of
+# the nifti libraries
+set(NIFTI_PACKAGE_PREFIX "AFNI_" CACHE STRING "Set the nifti package prefix")
+# The prefix can be prepended to the exported targets in the cases where
+# projects use target names with the prefixes in them for example
+# AFNI_NIFTI::AFNI_nifti2 instead of NIFTI::nifti2
+set(INCLUDE_PREFIX_IN_EXPORT OFF)
 set(NIFTI_LIBRARY_PROPERTIES ${AFNI_LIBRARY_PROPERTIES} CACHE STRING "Set the nifti library properties to match AFNI" FORCE)
-### STEP 2 -- fetch nifti_clib immediately at configuration time, so add_subdirectory can be used.
-include(FetchContent)
-# If new or changed data is needed, add that data to the https://github.com/NIFTI-Imaging/nifti-test-data repo
-# make a new release, and then update the URL and hash (shasum -a 256 <downloaded tarball>).
-
-FetchContent_Declare( fetch_nifti_clib_git_repo
-        GIT_REPOSITORY https://github.com/leej3/nifti_clib.git
-        GIT_TAG        v2.1.4 # or v3.0.0, or <HASH>
-        SOURCE_DIR     ${CMAKE_CURRENT_LIST_DIR}/nifti_clib_download # <- not standard,  remove this line to download in binary tree
-        )
-FetchContent_GetProperties(fetch_nifti_clib_git_repo)
-if(NOT fetch_nifti_clib_git_repo)
-    set(FETCHCONTENT_QUIET OFF)
-    message(STATUS "Downloading nifti_clib from github ... please wait")
-    FetchContent_Populate( fetch_nifti_clib_git_repo )
-    message(STATUS "download complete.")
-    add_subdirectory(${fetch_nifti_clib_git_repo_SOURCE_DIR} ${fetch_nifti_clib_git_repo_BINARY_DIR})
+find_package(${NIFTI_PACKAGE_PREFIX}NIFTI 3 QUIET)
+if (NOT "${${NIFTI_PACKAGE_PREFIX}NIFTI_FOUND}")
+  include(FetchContent)
+  FetchContent_Declare( nifti_repo
+          GIT_REPOSITORY https://github.com/NIFTI-Imaging/nifti_clib
+          GIT_TAG        v3.0.0 # or git <HASH> or git <branch>
+          )
+  FetchContent_GetProperties(nifti_repo)
+  if(NOT nifti_repo_POPULATED)
+      set(FETCHCONTENT_QUIET OFF)
+      message(STATUS "Downloading nifti_clib from github ... please wait")
+      FetchContent_Populate( nifti_repo )
+      message(STATUS "download complete.")
+      add_subdirectory(${nifti_repo_SOURCE_DIR} ${nifti_repo_BINARY_DIR})
+  endif()
 endif()
 
 
