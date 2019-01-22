@@ -1,6 +1,3 @@
-set(CONVERTED_FROM_FORTRAN_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}")
-set(CONVERTED_FROM_FORTRAN_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}" PARENT_SCOPE)
-
 set(OBJ backspace.c close.c dfe.c dolio.c due.c endfile.c err.c fmt.c fmtlib.c
   ftell_.c iio.c ilnw.c inquire.c lread.c lwrite.c open.c rdfmt.c rewind.c
   rsfe.c rsli.c rsne.c sfe.c sue.c typesize.c uio.c util.c wref.c wrtfmt.c
@@ -30,17 +27,18 @@ set(EFL ef1asc_.c ef1cmc_.c)
 set(CHAR s_cat.c s_cmp.c s_copy.c)
 set(F90BIT lbitbits.c lbitshft.c)
 
-set(CONVERTED_FROM_FORTRAN_SRCS ${OBJ} ${MISC} ${POW} ${CX} ${DCX} ${REAL} ${DBL}
+
+add_library(converted_from_fortran ${OBJ} ${MISC} ${POW} ${CX} ${DCX} ${REAL} ${DBL}
  ${INT} ${HALF} ${CMP} ${EFL} ${CHAR} ${F90BIT})
 
-add_library(converted_from_fortran ${CONVERTED_FROM_FORTRAN_SRCS})
-
-target_include_directories(converted_from_fortran PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
-${NIML_INCLUDE_DIRS} ${RICKR_INCLUDE_DIRS})
+target_include_directories(converted_from_fortran PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+set_target_properties(converted_from_fortran PROPERTIES PUBLIC_HEADER converted_from_fortran.h)
 target_link_libraries(converted_from_fortran NIFTI::nifticdf)
 install(TARGETS converted_from_fortran
+       EXPORT AFNITargets
        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 ) 
+add_library(AFNI::converted_from_fortran ALIAS converted_from_fortran)
