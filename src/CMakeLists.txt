@@ -171,34 +171,6 @@ if(NOT CHECK_FRAME_BUFFER)
 endif(NOT CHECK_FRAME_BUFFER)
 
 
-
-
-file(GLOB T3OBJS  "to3d*.c")
-
-file(GLOB MRI_OBJS "mri_*.c")
-list(APPEND MRI_OBJS csfft.c mcw_glob.c mcw_malloc.c cox_render.c debugtrace.c ge4_header.c rcmat.c dmat44.c)
-foreach(filename mri_affine.c mri_pc_pursuit.c mri_process_siemens.c mri_quantize.c mri_alphasim.c mri_wf.c mri_gwarp.c mri_pvmap.c)
-   list(REMOVE_ITEM MRI_OBJS ${CMAKE_CURRENT_SOURCE_DIR}/${filename})
-endforeach(filename)
-
-file(GLOB THD_OBJS "thd_*.c")
-list(APPEND THD_OBJS afni_vedit.c ktaub.c bilinear_warp3D.c)
-foreach(filename thd_bstrap_corr.c thd_gifti.c thd_md5.c thd_rot3d_2byte.c
-    thd_serialate.c thd_ttatlas_CA_EZ.c thd_Xdataset.c thd_base64.c
-     thd_shearwarp.c)
-  list(REMOVE_ITEM THD_OBJS "${CMAKE_CURRENT_SOURCE_DIR}/${filename}")
-endforeach(filename)
-file(GLOB EDT_OBJS "edt_*.c")
-
-file(GLOB CS_OBJS "cs_*.c")
-list(APPEND CS_OBJS multivector.c afni_environ.c cl2.c machdep.c afni_logger.c cl1.c powell_int.c powell_newuoa.c rhdd.c zfun.c svdlib.c)
-list(REMOVE_ITEM CS_OBJS "${CMAKE_CURRENT_SOURCE_DIR}/cs_color.c")
-list(REMOVE_ITEM CS_OBJS "${CMAKE_CURRENT_SOURCE_DIR}/cs_simult.c")
-list(REMOVE_ITEM CS_OBJS "${CMAKE_CURRENT_SOURCE_DIR}/cs_symeig23.c")
-
-file(GLOB SUMA_OBJS "suma_*.c")
-list(REMOVE_ITEM SUMA_OBJS "${CMAKE_CURRENT_SOURCE_DIR}/suma_gifti.c")
-
 list(APPEND MISC_OBJS afni_suma.c vol2surf.c list_struct.c nifti_statlib.c matrix.c gifti_choice.c misc_math.c)
 
 list(APPEND SOMEAFOBJS $<TARGET_OBJECTS:parser> afni_warp.c pbar_color_defs.c afni_ports.c)
@@ -285,6 +257,12 @@ foreach(target Xphace afni_open aiv)
 endforeach(target)
 
 
+message(MISC_OBJS ${MISC_OBJS})
+set(SUMA_OBJS  suma_afni_surface.c suma_algorithms.c suma_datasets.c suma_help.c suma_niml.c suma_string_manip.c suma_utils.c)
+set(CS_OBJS cs_addto_args.c cs_fgets.c cs_gamfit.c cs_laguerre.c cs_misc.c cs_playsound.c cs_pv.c cs_qhull.c cs_qmed.c cs_sort_d.c cs_sort_di.c cs_sort_dv.c cs_sort_ff.c cs_sort_fi.c cs_sort_fv.c cs_sort_ii.c cs_sort_iv.c cs_sort_str.c cs_symeig.c multivector.c afni_environ.c cl2.c machdep.c afni_logger.c cl1.c powell_int.c powell_newuoa.c rhdd.c zfun.c svdlib.c )
+set(EDT_OBJS  edt_addbrick.c edt_blur.c edt_buildmask.c edt_calcmask.c edt_checkargv.c edt_clust.c edt_clust2.c edt_clustalpha.c edt_clustarr.c edt_coerce.c edt_dsetitems.c edt_emptycopy.c edt_filtervol.c edt_floatize.c edt_fullcopy.c edt_geomcon.c edt_help.c edt_onedset.c edt_scl2max.c edt_sortmask.c edt_substbrick.c edt_volamax.c edt_volpad.c edt_wodcopy.c edt_zscore.c)
+set(THD_OBJS thd_1Ddset.c thd_1Dtodset.c thd_3Ddset.c thd_Tcorr1D.c thd_analyzeread.c thd_atlas.c thd_atr.c thd_automask.c thd_autonudge.c thd_auxdata.c thd_avts.c thd_bandpass.c thd_brainormalize.c thd_bstats.c thd_center.c thd_checkidc.c thd_cliplevel.c thd_compress.c thd_conformist.c thd_coords.c thd_correlate.c thd_countb.c thd_ctfread.c thd_delete.c thd_despike_L1.c thd_detrend.c thd_dset_nbhd.c thd_dset_to_grayplot.c thd_dset_to_vectim.c thd_dsetatr.c thd_dsetdblk.c thd_dsetinsess.c thd_dsetinslist.c thd_dsetrow.c thd_dsetto1D.c thd_dsetto3D.c thd_dumdset.c thd_editdaxes.c thd_entropy16.c thd_fdbrick.c thd_fdrcurve.c thd_fdto1D.c thd_fdto2D.c thd_fetchdset.c thd_filestuff.c thd_fitter.c thd_floatscan.c thd_forcemalloc.c thd_get1D.c thd_getorient.c thd_getpathprogs.c thd_http.c thd_idcode.c thd_incorrelate.c thd_info.c thd_initalldir.c thd_initdblk.c thd_initdkptr.c thd_initprefix.c thd_initsess.c thd_instacorr.c thd_intlist.c thd_iochan.c thd_lasso.c thd_linecount.c thd_loaddblk.c thd_logafni.c thd_makefbuc.c thd_makefim.c thd_makefith.c thd_makemask.c thd_manydset.c thd_mastery.c thd_matdaxes.c thd_mattor.c thd_mean_dset.c thd_median.c thd_mincread.c thd_mincwrite.c thd_mismatch.c thd_mnicoords.c thd_mpegread.c thd_newprefix.c thd_niftiread.c thd_niftiwrite.c thd_niml.c thd_nimlatr.c thd_notes.c thd_opendset.c thd_openimage.c thd_opentcat.c thd_orient.c thd_outlier_count.c thd_purgedblk.c thd_read_vecmat.c thd_reconpar.c thd_remove_allzero.c thd_rot3d.c thd_rot3d_byte.c thd_rotangles.c thd_rowfillin.c thd_sarr.c thd_satcheck.c thd_selenium.c thd_shear3d.c thd_shift2.c thd_statpval.c thd_strfunc.c thd_svdblur.c thd_table.c thd_timeof.c thd_tmask.c thd_trusthost.c thd_tshift.c thd_ttatlas_query.c thd_ttest.c thd_vcheck.c thd_warp_tables.c thd_warps.c thd_winsor.c thd_writeatr.c thd_writedblk.c thd_writedset.c thd_zblock.c thd_zeropad.c thd_zfillin.c afni_vedit.c ktaub.c bilinear_warp3D.c)
+set(MRI_OBJS mri_2dalign.c mri_3dalign.c mri_add_name.c mri_aff2d.c mri_align.c mri_allzero.c mri_blur3d.c mri_blur3d_variable.c mri_bport.c mri_cat2D.c mri_catvol.c mri_cfft.c mri_check.c mri_clusterize.c mri_colorsetup.c mri_complex_arith.c mri_copy.c mri_counter.c mri_coxplot.c mri_cut.c mri_dicom_hdr.c mri_dicom_stuff.c mri_drawing.c mri_dup.c mri_edit.c mri_entropy16.c mri_equal.c mri_extract.c mri_fdrize.c mri_fft_complex.c mri_filt_fft.c mri_flip3D.c mri_flippo.c mri_float_func.c mri_floatvec.c mri_free.c mri_fromstring.c mri_fwhm.c mri_genARMA11.c mri_genalign.c mri_genalign_util.c mri_get_cmass.c mri_histobyte.c mri_histog.c mri_histoshort.c mri_intedge.c mri_isgray.c mri_lsqfit.c mri_matrix.c mri_max.c mri_medianfilter.c mri_metrics.c mri_nbistats.c mri_new.c mri_nsize.c mri_nstats.c mri_nwarp.c mri_order.c mri_overlay.c mri_pcvector.c mri_percents.c mri_polyfit.c mri_purger.c mri_radial_random_field.c mri_rbfinterp.c mri_read.c mri_read_dicom.c mri_read_mpeg.c mri_read_stuff.c mri_render.c mri_rgba_compose.c mri_rota.c mri_scale.c mri_scaled_diff.c mri_scalize.c mri_sharpen3D.c mri_sharpness.c mri_shift2D.c mri_shifter.c mri_sobel.c mri_sort.c mri_stat_seq.c mri_stats.c mri_subset.c mri_swapbytes.c mri_symbolize.c mri_thresh.c mri_threshX.c mri_to_byte.c mri_to_complex.c mri_to_float.c mri_to_fvect.c mri_to_imarr.c mri_to_mri.c mri_to_pval.c mri_to_rgb.c mri_to_rgba.c mri_to_short.c mri_transpose.c mri_uncat2D.c mri_warp.c mri_warp3D.c mri_warp3D_align.c mri_warpfield.c mri_write.c mri_write_analyze.c mri_write_angif.c mri_zeropad.c csfft.c mcw_glob.c mcw_malloc.c cox_render.c debugtrace.c ge4_header.c rcmat.c dmat44.c )
 add_library(mri ${MRI_OBJS} ${THD_OBJS} ${EDT_OBJS} ${CS_OBJS} ${SUMA_OBJS} ${MISC_OBJS} ${SOMEAFOBJS} 
   ${AUDIO_OBJS} $<TARGET_OBJECTS:niml::niml> $<TARGET_OBJECTS:afsliceobjs> $<TARGET_OBJECTS:pcor_objs> rickr/r_new_resam_dset.c rickr/r_idisp.c rickr/r_misc.c)
 add_afni_target_properties(mri)
@@ -366,7 +344,7 @@ add_executable(3dfim 3dfim.c ts.c "${CMAKE_CURRENT_BINARY_DIR}/configured_pcor/a
 add_executable(FD2 FD2.c ts.c mcw.c overfim.c $<TARGET_OBJECTS:pcorsh> csfft_AJ.c)
 add_executable(fim2 fim2.c ts.c $<TARGET_OBJECTS:pcor>)
 add_executable(imreg imreg.c $<TARGET_OBJECTS:pcor>)
-add_executable(to3d ${T3OBJS})
+add_executable(to3d to3d.c)
 add_executable(3danisosmooth 3danisosmooth.c DWIstructtensor.c)
 add_executable(1dSEM 1dSEM.c sqrmat.c matrix.c)
 add_executable(3dNLfim 3dNLfim.c)
