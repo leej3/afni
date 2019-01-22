@@ -170,8 +170,8 @@ if(NOT CHECK_FRAME_BUFFER)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DGL_NO_CHECK_FRAME_BUFFER")
 endif(NOT CHECK_FRAME_BUFFER)
 
-file(GLOB AFOBJS "afni*.c")
-list(APPEND AFOBJS pbar.c $<TARGET_OBJECTS:parser> mcw_graf.c)
+
+
 
 file(GLOB T3OBJS  "to3d*.c")
 
@@ -203,11 +203,6 @@ list(APPEND MISC_OBJS afni_suma.c vol2surf.c list_struct.c nifti_statlib.c matri
 
 list(APPEND SOMEAFOBJS $<TARGET_OBJECTS:parser> afni_warp.c pbar_color_defs.c afni_ports.c)
 
-file(GLOB AFNI_HIST_FILES "afni_history*.c")
-foreach(filename afni_fimmer_compute.c afni_history.c afni_open.c
-    afni_pcor_update.c afni_slice.c afni_vcheck.c ${AFNI_HIST_FILES})
-  list(REMOVE_ITEM AFOBJS "${CMAKE_CURRENT_SOURCE_DIR}/${filename}")
-endforeach(filename)
 
 # Generate various afni_slice files and store them in the build tree and object library
 add_library(afsliceobjs OBJECT "")
@@ -220,13 +215,21 @@ endforeach(type)
 target_link_libraries(afsliceobjs PRIVATE libheaders)
 
 
-# Generate various pcor files and store them in the build tree
-configure_file(pcor.h  "${CMAKE_CURRENT_BINARY_DIR}/configured_pcor/pcor.h" COPYONLY)
+# Generate various pcor files and store them in the build tree and as object library
+add_library(pcor_objs OBJECT "")
+set(PCOR_DIR ${CMAKE_CURRENT_BINARY_DIR}/configured_pcor)
+configure_file(pcor.h  "${PCOR_DIR}/pcor.h" COPYONLY)
+target_include_directories(pcor_objs PUBLIC 
+  ${PCOR_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  $<TARGET_PROPERTY:NIFTI::nifti2,INTERFACE_INCLUDE_DIRECTORIES>
+  $<TARGET_PROPERTY:AFNI::coxplot,INTERFACE_INCLUDE_DIRECTORIES>)
+
 foreach(type byte float short)
 	set(output_file "${CMAKE_CURRENT_BINARY_DIR}/configured_pcor/afni_pcor_${type}.c")
 	configure_file(afni_pcor_update.c "${output_file}" COPYONLY)
 	set_source_files_properties("${output_file}" PROPERTIES COMPILE_DEFINITIONS "DTYPE=${type}")
-	list(APPEND AFOBJS "${output_file}")
+	target_sources(pcor_objs PUBLIC "${output_file}")
 endforeach(type)
 
 function(configure_pcor lib_name definitions)
@@ -264,8 +267,18 @@ foreach(target model_beta model_constant model_conv_PRF model_conv_PRF_6
 	target_link_libraries(${target} PUBLIC mri)
 endforeach(target)
 
-add_library(afobj OBJECT ${AFOBJS})
-add_executable(afni $<TARGET_OBJECTS:afobj> $<TARGET_OBJECTS:afsliceobjs>)
+
+add_library(afobj OBJECT afni.c afni_cluster.c afni_driver.c afni_environ.c
+afni_filer.c afni_fimfunc.c afni_fimmer.c afni_friends.c afni_func.c
+afni_graph.c afni_lock.c afni_logger.c afni_niml.c afni_pcor.c afni_plugin.c
+afni_plugout.c afni_ports.c afni_pplug_1dfunc.c afni_pplug_2dfunc.c
+afni_pplug_env.c afni_pplug_instacalc.c afni_pplug_instacorr.c
+afni_pplug_tstat.c afni_receive.c afni_setup.c afni_splash.c afni_suma.c
+afni_sumafunc.c afni_transforms.c afni_ttren.c afni_vedit.c afni_version.c
+afni_vol2surf.c afni_warp.c afni_whelp.c afni_widg.c pbar.c mcw_graf.c
+$<TARGET_OBJECTS:parser>)
+
+add_executable(afni $<TARGET_OBJECTS:afobj> $<TARGET_OBJECTS:afsliceobjs> $<TARGET_OBJECTS:parser>)
 foreach(target Xphace afni_open aiv)
   add_library(${target} ${target}.c)
   target_include_directories(${target} PUBLIC $<TARGET_PROPERTY:NIFTI::nifti2,INTERFACE_INCLUDE_DIRECTORIES>)
@@ -273,7 +286,7 @@ endforeach(target)
 
 
 add_library(mri ${MRI_OBJS} ${THD_OBJS} ${EDT_OBJS} ${CS_OBJS} ${SUMA_OBJS} ${MISC_OBJS} ${SOMEAFOBJS} 
-  ${AUDIO_OBJS} $<TARGET_OBJECTS:niml::niml> $<TARGET_OBJECTS:afsliceobjs> rickr/r_new_resam_dset.c rickr/r_idisp.c rickr/r_misc.c)
+  ${AUDIO_OBJS} $<TARGET_OBJECTS:niml::niml> $<TARGET_OBJECTS:afsliceobjs> $<TARGET_OBJECTS:pcor_objs> rickr/r_new_resam_dset.c rickr/r_idisp.c rickr/r_misc.c)
 add_afni_target_properties(mri)
 add_library(mrix display.c imseq.c bbox.c xim.c xutil.c xutil_webber.c LiteClue.c)
 add_afni_target_properties(mrix)
