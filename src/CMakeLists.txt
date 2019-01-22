@@ -2,7 +2,6 @@ include(CPack)
 include(CMakePackageConfigHelpers)
 include(FindX11)
 include(FindMotif)
-find_package(Xt REQUIRED)
 FIND_LIBRARY(NETCDF_LIBRARY netcdf)
 
 # This doesn't work. would be nice if it did:
@@ -385,22 +384,22 @@ target_link_libraries(3dretroicor PUBLIC mrix AFNI::coxplot AFNI::converted_from
 target_link_libraries(3dNLfim PUBLIC mrix ${CMAKE_DL_LIBS})
 
 target_link_libraries(parser PUBLIC AFNI::coxplot libheaders NIFTI::nifti2)
-target_link_libraries(1dgrayplot PUBLIC mri AFNI::coxplot ${XT_LIBRARIES})
+target_link_libraries(1dgrayplot PUBLIC mri AFNI::coxplot ${X11_Xt_LIB})
 target_link_libraries(1dplot PUBLIC mrix NIFTI::nifti2 ${X11_Xt_LIB} ${X11_LIBRARIES})
 target_link_libraries(3dDeconvolve PUBLIC mri AFNI::coxplot)
 target_link_libraries(3dDeconvolve_f PUBLIC mri AFNI::coxplot)
 target_link_libraries(3dDeconvolve_n PUBLIC mri AFNI::coxplot)
 target_link_libraries(Xphace PUBLIC mrix NIFTI::nifti2)
-target_link_libraries(afobj PUBLIC ${XT_LIBRARIES} mrix AFNI::coxplot)
+target_link_libraries(afobj PUBLIC  mrix AFNI::coxplot ${X11_Xt_LIB})
 target_link_libraries(afni PUBLIC mrix libheaders ${CMAKE_DL_LIBS})
 target_link_libraries(afni_open PUBLIC mri)
 target_link_libraries(aiv PUBLIC mrix NIFTI::nifti2)
 # target_include_directories(aiv $<TARGET_PROPERTY:NIFTI::nifti2,INTERFACE_INCLUDE_DIRECTORIES>)
 
 target_link_libraries(mri PUBLIC  eispack netcdf m giftiio 3DEdge volpack
-   AFNI::XmHTML AFNI::coxplot ${XT_LIBRARIES} NIFTI::nifti2 NIFTI::nifticdf)
-target_link_libraries(mrix PUBLIC mri AFNI::coxplot libheaders AFNI::XmHTML)
-target_link_libraries(to3d PUBLIC mrix NIFTI::nifti2 ${MOTIF_LIBRARIES} ${XT_LIBRARIES})
+   AFNI::XmHTML AFNI::coxplot ${X11_Xt_LIB} NIFTI::nifti2 NIFTI::nifticdf)
+target_link_libraries(mrix PUBLIC mri AFNI::coxplot libheaders AFNI::XmHTML ${X11_LIBRARIES})
+target_link_libraries(to3d PUBLIC mrix NIFTI::nifti2 ${MOTIF_LIBRARIES})
 
 # target_link_libraries(3dedge3 PUBLIC mri)
 
