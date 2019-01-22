@@ -73,6 +73,32 @@ if (NOT "${${NIFTI_PACKAGE_PREFIX}NIFTI_FOUND}")
 endif()
 
 
+# Find or fetch gifti_clib
+
+# a prefix can be used to avoid collisions with pre-existsing installations of
+# the nifti libraries. The same prefix will be used for gifti The prefix can
+# be prepended to the exported targets in the cases where projects use target
+# names with the prefixes in them. The nifti setting applies to gifti too
+find_package(${NIFTI_PACKAGE_PREFIX}GIFTI 0 REQUIRED)
+if (NOT "${${NIFTI_PACKAGE_PREFIX}GIFTI_FOUND}")
+  message("fix gifti")
+  # TODO: add fetch functionality
+  # include(FetchContent)
+  # FetchContent_Declare( gifti_repo
+  #         # GIT_REPOSITORY https://github.com/NIFTI-Imaging/gifti_clib
+  #         GIT_REPOSITORY /afni/gifti_clib
+  #         # GIT_TAG        v3.0.0 # or git <HASH> or git <branch>
+  #         GIT_TAG        master # or git <HASH> or git <branch>
+  #         )
+  # FetchContent_GetProperties(gifti_repo)
+  # if(NOT gifti_repo_POPULATED)
+  #     set(FETCHCONTENT_QUIET OFF)
+  #     message(STATUS "Downloading gifti_clib from github ... please wait")
+  #     FetchContent_Populate( gifti_repo )
+  #     message(STATUS "download complete.")
+  #     add_subdirectory(${gifti_repo_SOURCE_DIR} ${gifti_repo_BINARY_DIR})
+  # endif()
+endif()
 
 
 set(AFNI_MAJOR_VERSION 17)
@@ -131,15 +157,13 @@ add_subdirectory(niml)
 
 # foreach(bundled avovk coxplot crorden eispack gifti Audio
 #        ptaylor qhull svm volpack XmHTML converted_from_fortran rickr 3DEdge SUMA)
-foreach(bundled  coxplot crorden eispack gifti Audio
+foreach(bundled  coxplot crorden eispack Audio
         qhull svm volpack XmHTML converted_from_fortran rickr 3DEdge)
   optional_bundle(${bundled})
 endforeach(bundled)
 
-option(USE_GIFTI "use gifti")
-if(USE_GIFTI)
-	set_source_files_properties(gifti_choice.c PROPERTIES COMPILE_DEFINITIONS "HAVE_GIFTI")
-endif(USE_GIFTI)
+
+set_source_files_properties(gifti_choice.c PROPERTIES COMPILE_DEFINITIONS "HAVE_GIFTI")
 
 option(CHECK_FRAME_BUFFER "do not check the framebuffer before rendering (might be buggy)" YES)
 if(NOT CHECK_FRAME_BUFFER)
@@ -347,11 +371,6 @@ add_executable(3dretroicor 3dretroicor.c retroicor.c)
 
 
 set_source_files_properties(3dDeconvolve_f PROPERTIES COMPILE_DEFINITIONS "FLOATIZE")
-set_source_files_properties(gifti_choice.c PROPERTIES COMPILE_DEFINITIONS "DTYPE=${type}")
-
-
-
-
 
 ### target_include_directories(afni_warp PUBLIC)
 ##target_include_directories(3dDeconvolve PUBLIC)
@@ -362,13 +381,14 @@ target_include_directories(3dretroicor PUBLIC $<TARGET_PROPERTY:NIFTI::nifti2,IN
 # target_include_directories(SUMA PUBLIC  ${3DEDGE_INCLUDE_DIRS})
 #target_include_directories(coxplot PUBLIC)
 target_include_directories(eispack PUBLIC $<TARGET_PROPERTY:AFNI::converted_from_fortran,INTERFACE_INCLUDE_DIRECTORIES>)
-target_include_directories(mri  PUBLIC  ${3DEDGE_INCLUDE_DIRS} ${AUDIO_INCLUDE_DIRS} $<TARGET_PROPERTY:AFNI::coxplot,INTERFACE_INCLUDE_DIRECTORIES>  )
-target_include_directories(mrix PUBLIC $<TARGET_PROPERTY:AFNI::XmHTML,INTERFACE_INCLUDE_DIRECTORIES> ${GIFTI_INCLUDE_DIRS})
+#TODO fix the gifti_choice including gifti_io.c
+target_include_directories(mri  PUBLIC  gifti ${3DEDGE_INCLUDE_DIRS} ${AUDIO_INCLUDE_DIRS} $<TARGET_PROPERTY:AFNI::coxplot,INTERFACE_INCLUDE_DIRECTORIES> $<TARGET_PROPERTY:GIFTI::giftiio,INTERFACE_INCLUDE_DIRECTORIES>  )
+target_include_directories(mrix PUBLIC $<TARGET_PROPERTY:AFNI::XmHTML,INTERFACE_INCLUDE_DIRECTORIES> )
 target_include_directories(afobj 
   PUBLIC
    $<TARGET_PROPERTY:NIFTI::nifti2,INTERFACE_INCLUDE_DIRECTORIES>
   $<TARGET_PROPERTY:AFNI::XmHTML,INTERFACE_INCLUDE_DIRECTORIES> 
-  ${GIFTI_INCLUDE_DIRS} )
+   )
 target_include_directories(parser PUBLIC ${NIML_INCLUDE_DIRS} )
 target_include_directories(to3d PUBLIC ${MOTIF_INCLUDE_DIR} )
 target_include_directories(1dplot PUBLIC  ${XT_INCLUDE_DIR} ${X11_INCLUDE_DIRS} )
@@ -396,7 +416,7 @@ target_link_libraries(afni_open PUBLIC mri)
 target_link_libraries(aiv PUBLIC mrix NIFTI::nifti2)
 # target_include_directories(aiv $<TARGET_PROPERTY:NIFTI::nifti2,INTERFACE_INCLUDE_DIRECTORIES>)
 
-target_link_libraries(mri PUBLIC  eispack netcdf m giftiio 3DEdge volpack
+target_link_libraries(mri PUBLIC  eispack netcdf m GIFTI::giftiio 3DEdge volpack
    AFNI::XmHTML AFNI::coxplot ${X11_Xt_LIB} NIFTI::nifti2 NIFTI::nifticdf)
 target_link_libraries(mrix PUBLIC mri AFNI::coxplot libheaders AFNI::XmHTML ${X11_LIBRARIES})
 target_link_libraries(to3d PUBLIC mrix NIFTI::nifti2 ${MOTIF_LIBRARIES})
