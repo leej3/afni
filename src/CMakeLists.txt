@@ -170,9 +170,6 @@ if(NOT CHECK_FRAME_BUFFER)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DGL_NO_CHECK_FRAME_BUFFER")
 endif(NOT CHECK_FRAME_BUFFER)
 
-
-list(APPEND MISC_OBJS afni_suma.c vol2surf.c list_struct.c nifti_statlib.c matrix.c gifti_choice.c misc_math.c)
-
 list(APPEND SOMEAFOBJS $<TARGET_OBJECTS:parser> afni_warp.c pbar_color_defs.c afni_ports.c)
 
 
@@ -257,7 +254,7 @@ foreach(target Xphace afni_open aiv)
 endforeach(target)
 
 
-message(MISC_OBJS ${MISC_OBJS})
+set(MISC_OBJS afni_suma.c vol2surf.c list_struct.c nifti_statlib.c matrix.c gifti_choice.c misc_math.c)
 set(SUMA_OBJS  suma_afni_surface.c suma_algorithms.c suma_datasets.c suma_help.c suma_niml.c suma_string_manip.c suma_utils.c)
 set(CS_OBJS cs_addto_args.c cs_fgets.c cs_gamfit.c cs_laguerre.c cs_misc.c cs_playsound.c cs_pv.c cs_qhull.c cs_qmed.c cs_sort_d.c cs_sort_di.c cs_sort_dv.c cs_sort_ff.c cs_sort_fi.c cs_sort_fv.c cs_sort_ii.c cs_sort_iv.c cs_sort_str.c cs_symeig.c multivector.c afni_environ.c cl2.c machdep.c afni_logger.c cl1.c powell_int.c powell_newuoa.c rhdd.c zfun.c svdlib.c )
 set(EDT_OBJS  edt_addbrick.c edt_blur.c edt_buildmask.c edt_calcmask.c edt_checkargv.c edt_clust.c edt_clust2.c edt_clustalpha.c edt_clustarr.c edt_coerce.c edt_dsetitems.c edt_emptycopy.c edt_filtervol.c edt_floatize.c edt_fullcopy.c edt_geomcon.c edt_help.c edt_onedset.c edt_scl2max.c edt_sortmask.c edt_substbrick.c edt_volamax.c edt_volpad.c edt_wodcopy.c edt_zscore.c)
