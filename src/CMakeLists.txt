@@ -223,7 +223,7 @@ endforeach(type)
 
 
 function(configure_pcor lib_name definitions)
-	set(output_file "${CMAKE_CURRENT_BINARY_DIR}/${libname}.c")
+	set(output_file "${CMAKE_CURRENT_BINARY_DIR}/${lib_name}.c")
 	configure_file(pcor.c "${output_file}" COPYONLY)
 	set_source_files_properties("${output_file}" PROPERTIES COMPILE_DEFINITIONS "${definitions}")
 	add_library(${lib_name} OBJECT "${output_file}")
