@@ -398,7 +398,7 @@ target_link_libraries(aiv PUBLIC mrix NIFTI::nifti2)
 # target_include_directories(aiv $<TARGET_PROPERTY:NIFTI::nifti2,INTERFACE_INCLUDE_DIRECTORIES>)
 
 target_link_libraries(mri PUBLIC  eispack netcdf m giftiio 3DEdge volpack
-   AFNI::XmHTML AFNI::coxplot ${XT_LIBRARIES}  NIFTI::nifti2 NIFTI::nifticdf)
+   AFNI::XmHTML AFNI::coxplot ${XT_LIBRARIES} NIFTI::nifti2 NIFTI::nifticdf)
 target_link_libraries(mrix PUBLIC mri AFNI::coxplot libheaders AFNI::XmHTML)
 target_link_libraries(to3d PUBLIC mrix NIFTI::nifti2 ${MOTIF_LIBRARIES} ${XT_LIBRARIES})
 
