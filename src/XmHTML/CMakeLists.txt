@@ -1,40 +1,34 @@
-cmake_minimum_required(VERSION 2.9)
+# TODO: install prefix should be used to distinguish from external library
+cmake_minimum_required(VERSION 3.13)
 project(XmHTML)
 
 set(XMHTML_VERSION "1107")
 set(XMHTML_ARCHIVE "1.1.7")
-
-set(XMHTML_INSTALL_BIN_DIR "${CMAKE_INSTALL_PREFIX}/bin")
-set(XMHTML_INSTALL_LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib")
-set(XMHTML_INSTALL_STA_DIR "${CMAKE_INSTALL_PREFIX}/lib")
-set(XMHTML_INSTALL_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include")
-
-
 if (NOT ${X11_FOUND})
   find_package(X11 REQUIRED)
 endif()
 find_package(JPEG 62 REQUIRED)
 
+# TODO: set target specific compile_definitions
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DVERSION=${XMHTML_VERSION} -DMotif -DHAVE_LIBJPEG -DHAVE_REGEX_H")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
 
-include_directories(include include/XmHTML include/common)
+# Construct XmHTML  library
+add_library(XmHTML "")
+# add headers to XmHTML target_sources
+add_subdirectory(include)
+
+# add the c files to XmHTML target sources
 add_subdirectory(lib)
 
-add_library(XmHTML $<TARGET_OBJECTS:XmHTML_objs>)
-target_include_directories(XmHTML
-  PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/http"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/XmHTML"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/common"
-)
 target_link_libraries(XmHTML ${X11_Xpm_LIB} JPEG::JPEG)
 
+# TODO: need to install include to XmHTML
 install(TARGETS XmHTML
-       RUNTIME DESTINATION ${XMHTML_INSTALL_BIN_DIR}
-       LIBRARY DESTINATION ${XMHTML_INSTALL_LIB_DIR}
-       ARCHIVE DESTINATION ${XMHTML_INSTALL_LIB_DIR}
-       PUBLIC_HEADER DESTINATION ${XMHTML_INSTALL_INCLUDE_DIR}
+       EXPORT AFNITargets
+       RUNTIME DESTINATION ${AFNI_INSTALL_RUNTIME_DIR}
+       LIBRARY DESTINATION ${AFNI_INSTALL_LIBRARY_DIR}
+       ARCHIVE DESTINATION ${AFNI_INSTALL_ARCHIVE_DIR}
+       PUBLIC_HEADER DESTINATION ${AFNI_INSTALL_INCLUDE_DIR}
 ) 
 add_library(AFNI::XmHTML ALIAS XmHTML)
