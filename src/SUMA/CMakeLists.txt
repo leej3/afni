@@ -29,7 +29,7 @@ include_directories(
 	${ZLIB_INCLUDE_DIRS}
 	${GLIB_INCLUDE_DIRS}
 
-	${NIML_INCLUDE_DIRS}
+	$<TARGET_PROPERTY:AFNI::niml,INTERFACE_INCLUDE_DIRECTORIES>
 
 	#-I./ -I../
 	#-Igts/src
