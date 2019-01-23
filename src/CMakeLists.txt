@@ -138,29 +138,18 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_TRACING") # XXX not in default cflags
 add_subdirectory(scripts_install)
 add_subdirectory(python_scripts)
 add_subdirectory(R_scripts)
-
-
-
-# bundled library (XXX to remove/package elsewhere)
-macro(optional_bundle name)
-	string(TOUPPER ${name} upper)
-
-	option(USE_SYSTEM_${upper} "use system ${name} instead of bundled")
-	if(USE_SYSTEM_${upper})
-		find_package(${name} REQUIRED)
-	else(USE_SYSTEM_${upper})
-		add_subdirectory(${name})
-	endif(USE_SYSTEM_${upper})
-endmacro(optional_bundle)
-
 add_subdirectory(niml)
-
-# foreach(bundled avovk coxplot crorden eispack gifti Audio
-#        ptaylor qhull svm volpack XmHTML converted_from_fortran rickr 3DEdge SUMA)
-foreach(bundled  coxplot crorden eispack Audio
-        qhull svm volpack XmHTML converted_from_fortran rickr 3DEdge)
-  optional_bundle(${bundled})
-endforeach(bundled)
+add_subdirectory(XmHTML)
+add_subdirectory(coxplot)
+add_subdirectory(crorden)
+add_subdirectory(eispack)
+add_subdirectory(Audio)
+add_subdirectory(qhull)
+add_subdirectory(svm)
+add_subdirectory(volpack)
+add_subdirectory(converted_from_fortran)
+add_subdirectory(rickr)
+add_subdirectory(3DEdge)
 
 
 set_source_files_properties(gifti_choice.c PROPERTIES COMPILE_DEFINITIONS "HAVE_GIFTI")
