@@ -62,6 +62,19 @@ macro(add_afni_target_properties target)
     )
 endmacro()
 
+
+set(INSTALL_TO_ABIN 0)
+if(${INSTALL_TO_ABIN})
+  set(AFNI_INSTALL_RUNTIME_DIR $ENV{HOME}/abin)
+  set(AFNI_INSTALL_LIBRARY_DIR $ENV{HOME}/abin)
+  set(AFNI_INSTALL_INCLUDE_DIR $ENV{HOME}/abin)
+  set(AFNI_INSTALL_ARCHIVE_DIR $ENV{HOME}/abin)
+else()
+  set(AFNI_INSTALL_RUNTIME_DIR ${CMAKE_INSTALL_PREFIX}/bin)
+  set(AFNI_INSTALL_LIBRARY_DIR ${CMAKE_INSTALL_PREFIX}/lib/AFNI)
+  set(AFNI_INSTALL_INCLUDE_DIR ${CMAKE_INSTALL_PREFIX}/include/AFNI)
+  set(AFNI_INSTALL_ARCHIVE_DIR ${CMAKE_INSTALL_PREFIX}/lib/AFNI)
+endif()
 # Read in the line containing the version
 # file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/include/My/Version.hpp"
 #     VERSION_STRING REGEX ${VERSION_REGEX})
