@@ -159,7 +159,10 @@ if (daskmode != "None"):
             n_threads = ps.max_threads
         else:
             n_threads = 4
+        omp_count = os.environ.get("OMP_NUM_THREADS","8")
+        print("OMP_NUM_THREADS in environment or default is: %s"% omp_count)
 
+        print("starting a localcluster of %d workers!" %n_workers) 
         client = Client(processes = False,
             n_workers= n_workers,
             threads_per_worker=n_threads,
@@ -185,9 +188,11 @@ if __name__ == '__main__':
         # task_graph = dask_job_wrapper.run(ps,delayed,client) # useful for reloading modules
 
         # The following command executes the task graph and returns futures 
-        template_futures = client.compute(task_graph_dict[graph_output_key],
-            resources = {'big_jobs' : 1}
-            )
+        if(daskmode == "SLURM"):
+           template_futures = client.compute(task_graph_dict[graph_output_key],
+             resources = {'big_jobs' : 1})
+        else:
+           template_futures = client.compute(task_graph_dict[graph_output_key])
 
         # This is a blocking call that waits for everything to be computed and
         # will return the results.
