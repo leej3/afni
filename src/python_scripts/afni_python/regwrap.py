@@ -16,7 +16,7 @@ from afni_python.option_list import OptionList, read_options
 class RegWrap():
     def __init__(self, label):
         # software version (update for changes)
-        self.make_template_version = "0.03"
+        self.make_template_version = "0.04"
         # user assigned path for output (not used yet)
         self.output_dir = 'iterative_template_dir'
         self.ok_to_exist = 0 #Fail if weight data exists
@@ -58,6 +58,7 @@ class RegWrap():
         self.cluster_walltime = []
         self.aniso_iters = "1"
         self.upsample_level = [] # no upsampling by default
+        self.findtypical_level =[] # no typical subject intermediates by default in nonlinear
         return
 
     def init_opts(self):
@@ -127,6 +128,9 @@ class RegWrap():
         self.valid_opts.add_opt('-upsample_level', 1, [],
                                 helpstr="Upsample base and warp starting at a single\n"
                                         "nonlinear alignment level providing a level from 0 to 4")
+        self.valid_opts.add_opt('-findtypical_level', 1, [],
+                                helpstr="Search for a typical subject as intermediate target\n"
+                                        "at a single nonlinear alignment level [1 to 4]")
 
         self.valid_opts.add_opt('-overwrite', 0, [],
                                 helpstr="Overwrite existing files")
@@ -507,6 +511,17 @@ class RegWrap():
                 self.error_msg("Must provide a number from 0 to 4 for a specific nonlinear level")
                 self.ciao(1)
 
+        # find typical subject at a specified nonlinear level
+        opt = self.user_opts.find_opt('-findtypical=_level')
+        if opt != None:
+            try:
+                self.findtypical_level = int(opt.parlist[0])
+            except:
+                self.error_msg("Must provide a number from 1 to 4 for a specific nonlinear level for findtypical_level")
+                self.ciao(1)
+            if((self.findtypical_level<1) or (self.findtypical_level>4)):
+                self.error_msg("Must provide a number from 1 to 4 for a specific nonlinear level for findtypical_level")
+                self.ciao(1)
  
         opt = self.user_opts.find_opt('-dsets')
         if opt == None:

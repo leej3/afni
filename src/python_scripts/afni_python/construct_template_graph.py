@@ -784,6 +784,118 @@ def upsample_subjects_bases(ps, delayed, target_brain, aa_brains,
             'aa_brains_us' : aa_brains_out, 
             'warpsetlist_us': warpsetlist_out}
 
+def compute_deformation_dist(ps, delayed, aa_brain, warp, suffix="_defdist"):
+    """
+    find mean deformation distance in deformation maps masked by original brain
+    """
+
+    # create output dataset structure
+    o = prepare_afni_output(ps, aa_brain, suffix)
+
+    warp_name = warp.pv()
+    out_prefix = o.out_prefix()
+    # inverse warp to compute distance in affine space (before nonlinear warp)
+    inv_warp = prepare_afni_output(ps, warp, "_inv")
+    inv_warp_prefix = inv_warp.out_prefix()
+    inv_warp_name = inv_warp.pv()
+
+    if ps.rewrite:
+        rewrite = " -overwrite "
+    else:
+        rewrite = ""
+	
+    cmd_str = """\
+    3dNwarpCat -warp1 INV({warp_name}) -prefix {inv_warp_prefix} \
+    {rewrite}
+    """
+    cmd_str = cmd_str.format(**locals())
+    # check if inverse warp output dataset was created
+    inv_warp = run_check_afni_cmd(cmd_str, ps, inv_warp, "Could not compute inverse warp using")
+
+    # fill holes in brain
+    filled_brain = prepare_afni_output(ps, aa_brain, "_filled")
+    input_name = aa_brain.pv()
+    filled_brain_name = filled_brain.pv()
+    filled_brain_prefix = filled_brain.out_prefix()
+
+    # fill holes to account for ventricles and such
+    cmd_str = """\
+    3dmask_tool -fill_holes  \
+    -prefix {filled_brain_prefix} -inputs {input_name} \ 
+    {rewrite}
+    """
+
+    cmd_str = cmd_str.format(**locals())
+
+    # check if output dataset was created
+    filled_brain = run_check_afni_cmd(cmd_str, ps, filled_brain, "Could not fill holes using")
+
+    dist_prefix = o.pv()
+    # compute deformation distance at every voxel (3dcalc is another way,
+    #   but with mask option especially,this should be a little faster)
+    cmd_str = """\
+    3dTstat -mask {filled_brain_name} -l2norm  \
+    -prefix {out_prefix} {inv_warp_name} \ 
+    {rewrite}
+    """
+
+    cmd_str = cmd_str.format(**locals())
+
+    # check if output dataset was created
+    o = run_check_afni_cmd(cmd_str, ps, o, "Could not compute deformation distance using")
+    dist_prefix = o.pv()
+
+    # compute mean distance
+    input_name = filled_brain.pv()
+
+    cmd_str = """\
+    3dBrickStat -mask {input_name} -mean {dist_prefix}
+    """
+    if(not ps.dry_run()):
+       com = shell_com( cmd_str, ps.oexec, capture=1)
+       com.run()
+       dist = float(com.val(0,0))
+    else:
+       com = shell_com( cmd_str, "dry_run")
+       com.run()
+       dist = 1.0
+
+    return(dist)
+
+def find_typical_subject(ps, delayed, aa_brains,
+                    warpsetlist, **kwargs):
+    """
+    find typical subject, i.e. one with the lowest deformation distance
+    given a list of subjects and a list of deformation maps-dx,dy,dz
+    """
+
+    # need at least an empty matching list of warps as input
+    if not warpsetlist:
+        warpsetlist = [''] * len(aa_brains)
+        print("no warp list provided to find typical subject. This should never happen")
+        return []
+
+    # initialize the list of output distances and brains
+    dists_brains = []
+    
+    # compute deformation distance for all the affine brains and the warps
+    for (aa_brain, warp) in zip(aa_brains,warpsetlist):
+        # compute distance
+        aa_dist  = delayed(compute_deformation_dist)(
+        ps, aa_brain, warp, suffix="_defdist")
+
+        # add the outputs to the list as a list of tuples of distance and brains
+        dists_brains.append((aa_dist,aa_brain))
+
+    # sort the distances with their corresponding subject brains
+    sdist = sorted(dists_brains, key=itemgetter(0))
+    typ_brain = sdist[0][1]
+    print("typical brain is %s with distance %d" % typ_brain.prefix, sdist[0][0])
+
+    # return subject brain with shortest distance
+    return(typ_brain)
+
+
      
 def get_nl_leveln(ps, delayed, target_brain, aa_brains, warpsetlist,resize_brain, **kwargs):
 
@@ -840,7 +952,7 @@ def get_nl_leveln(ps, delayed, target_brain, aa_brains, warpsetlist,resize_brain
 
 def get_upsample_val(upsample_level):
     """
-    3rd iteration - set of nonlinear iterations - compute nonlinear mean across all subjects
+    make dictionary to upsample at only one level
     """
     upsample_dict = {}
     for ii in range(5):
@@ -889,7 +1001,13 @@ def get_nl_mean(ps, delayed, basedset, aa_brains, warpsetlist, resize_brain):
             resize_brain = us_output['resize_brain_us']
             aa_brains = us_output['aa_brains_us']
             warpsetlist = us_output['warpsetlist_us']
-	    
+        # may want to find a "typical" brain as intermediate restart
+        # this subject has least deformation to current mean brain 
+        if(level == ps.findtypical_level):
+            typical_brain = find_typical(ps, delayed, nl_mean_brain, aa_brains, warpsetlist)
+            nl_mean_brain = typical_brain
+        # do the nonlinear level of warping toward the current mean
+        # with the latest parameters for that level
         nl_output = get_nl_leveln(
             ps,
             delayed,
