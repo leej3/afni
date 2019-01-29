@@ -12,6 +12,7 @@ daskmode = "None"  # by default, don't use dask. Just use single computer linear
 # debugging_localcluster = False # does not use cluster
 
 import os
+from time import sleep
 from afni_python.regwrap import RegWrap
 from dask import delayed
 # AFNI modules
@@ -144,6 +145,13 @@ if (daskmode != "None"):
         cluster.start_workers(n_workers)
         client = Client(cluster)
         print(client.scheduler)
+
+        min_workers = 0.5 * n_threads
+        while ((client.status == "running") and (len(client.scheduler_info()["workers"]) < min_workers)):
+            current_pool_size = len(client.scheduler_info()["workers"])
+            print("Waiting for a sufficient number of workers. Currently have {current_pool_size}, waiting for {min_workers}")
+            sleep(1.0)
+
         using_cluster = True
 
     else:
