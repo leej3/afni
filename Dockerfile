@@ -56,7 +56,8 @@ RUN apt-get update && \
     python-matplotlib \
     python-rpy2 \
     python-tk \
-    python-numpy
+    python-numpy \
+    ninja-build
 
 
 RUN \
@@ -71,6 +72,18 @@ RUN \
             pandas; \
     fi 
 
+RUN wget https://repo.continuum.io/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh && \
+    bash Miniconda3-4.5.11-Linux-x86_64.sh -b -p /usr/local/miniconda && \
+    rm Miniconda3-4.5.11-Linux-x86_64.sh
+
+ENV PATH="/usr/local/miniconda/bin:$PATH" \
+    CPATH="/usr/local/miniconda/include/:$CPATH" \
+    LANG="C.UTF-8" \
+    LC_ALL="C.UTF-8" \
+    PYTHONNOUSERSITE=1
+conda install -c conda-forge awscli 
+RUN conda install conda-build
+
 
 ENV AFNI_ROOT=/afni
 # Copy AFNI source code. This can invalidate the build cache.
@@ -81,7 +94,7 @@ ADD Dockerfile $AFNI_ROOT/
 RUN  mkdir -p /build
 WORKDIR /build
 
-RUN  cmake $AFNI_ROOT
-RUN make -j 20 install
+# RUN  cmake $AFNI_ROOT
+# RUN make -j 20 install
 # RUN apsearch -update_all_afni_help
 
