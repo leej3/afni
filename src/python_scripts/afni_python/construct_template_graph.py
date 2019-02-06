@@ -33,7 +33,8 @@ def align_centers(ps, dset=None, base=None, suffix="_ac", new_dir=1):
         output_dir = "%s/" % os.path.realpath("%s/%s" %
                                               (ps.odir, ndir.out_prefix()))
         print("# User has selected a new output directory %s" % output_dir)
-        com = ab.shell_com(("mkdir %s" % output_dir),
+        # should we run this through run_afni_cmd?
+        com = ab.shell_com(("mkdir -p %s" % output_dir),
                            ps.oexec, trim_length=2000)
         com.run()
         # give the OS and filesystems a couple seconds
@@ -53,18 +54,9 @@ def align_centers(ps, dset=None, base=None, suffix="_ac", new_dir=1):
         cmd_str = "%s; @Align_Centers -base %s -dset %s -no_cp" %     \
             (copy_cmd, base.input(), o.input())
     print("executing:\n %s" % cmd_str)
-    if ps.ok_to_exist and o.exist():
-        print("Output already exists. That's okay")
-    elif (not o.exist() or ps.rewrite or ps.dry_run()):
-        o.delete(ps.oexec)
-        com = ab.shell_com(cmd_str, ps.oexec, trim_length=2000)
-        com.run(chdir="%s" % o.path)
-        if (not o.exist() and not ps.dry_run()):
-            print("** ERROR: Could not align centers using \n  %s\n" % cmd_str)
-            return None
-    else:
-        ps.exists_msg(o.input())
-
+    out_dict = {'dset':o}
+    out_dict = run_check_afni_cmd(cmd_str, ps, out_dict, "** ERROR: Could not align centers using")
+    o = out_dict['dset']
     return o
 
 
@@ -88,17 +80,10 @@ def automask(ps, dset=None, suffix="_am"):
     cmd_str = "3dAutomask -dilate 3 -apply_prefix %s %s" %     \
         (o.out_prefix(), dset.input())
     print("executing:\n %s" % cmd_str)
-    if ps.ok_to_exist and o.exist():
-        print("Output already exists. That's okay")
-    elif (not o.exist() or ps.rewrite or ps.dry_run()):
-        o.delete(ps.oexec)
-        com = ab.shell_com(cmd_str, ps.oexec, trim_length=2000)
-        com.run(chdir="%s" % o.path)
-        if (not o.exist() and not ps.dry_run()):
-            print("** ERROR: Could not automask using \n  %s\n" % cmd_str)
-            return None
-    else:
-        ps.exists_msg(o.input())
+
+    out_dict = {'dset':o}
+    out_dict = run_check_afni_cmd(cmd_str, ps, out_dict, "** ERROR: Could not automask using")
+    o = out_dict['dset']
 
     return o
 
@@ -122,17 +107,9 @@ def skullstrip(ps, dset=None, suffix="_ns"):
     cmd_str = "3dSkullStrip -prefix %s -input %s -push_to_edge" %     \
         (o.out_prefix(), dset.input())
     print("executing:\n %s" % cmd_str)
-    if ps.ok_to_exist and o.exist():
-        print("Output already exists. That's okay")
-    elif (not o.exist() or ps.rewrite or ps.dry_run()):
-        o.delete(ps.oexec)
-        com = ab.shell_com(cmd_str, ps.oexec, trim_length=2000)
-        com.run(chdir="%s" % o.path)
-        if (not o.exist() and not ps.dry_run()):
-            print("** ERROR: Could not skullstrip using \n  %s\n" % cmd_str)
-            return None
-    else:
-        ps.exists_msg(o.input())
+    out_dict = {'dset':o}
+    out_dict = run_check_afni_cmd(cmd_str, ps, out_dict, "** ERROR: Could not skullstrip using")
+    o = out_dict['dset']
 
     return o
 
@@ -157,17 +134,9 @@ def unifize(ps, dset=None, suffix="_un"):
     cmd_str = "3dUnifize -gm -clfrac 0.4 -Urad 30 -prefix %s -input %s" %     \
         (o.out_prefix(), dset.input())
     print("executing:\n %s" % cmd_str)
-    if ps.ok_to_exist and o.exist():
-        print("Output already exists. That's okay")
-    elif (not o.exist() or ps.rewrite or ps.dry_run()):
-        o.delete(ps.oexec)
-        com = ab.shell_com(cmd_str, ps.oexec, trim_length=2000)
-        com.run(chdir="%s" % o.path)
-        if (not o.exist() and not ps.dry_run()):
-            print("** ERROR: Could not unifize using \n  %s\n" % cmd_str)
-            return None
-    else:
-        ps.exists_msg(o.input())
+    out_dict = {'dset':o}
+    out_dict = run_check_afni_cmd(cmd_str, ps, out_dict, "** ERROR: Could not unifize using")
+    o = out_dict['dset']
 
     return o
 
@@ -221,19 +190,10 @@ def rigid_align(ps, dset, base, suffix="_4rigid"):
     print(cmd_str)
     print('this is running')
     print("executing:\n %s" % cmd_str)
-    if (o.exist() and ps.ok_to_exist):
-        print("Output already exists. That's okay")
-        return o
-    elif (not (o.exist() and mat_exists) or ps.rewrite or ps.dry_run()):
-        o.delete(ps.oexec)
-        com = ab.shell_com(cmd_str, ps.oexec, trim_length=2000)
-        com.run(chdir="%s" % o.path)
-        if (not o.exist() and not ps.dry_run()):
-            assert(False)
-            print("** ERROR: Could not align rigidly using \n  %s\n" % cmd_str)
-            return None
-    else:
-        ps.exists_msg(o.input())
+    out_dict = {'dset':o}
+    out_dict = run_check_afni_cmd(cmd_str, ps, out_dict, "** ERROR: Could not align rigidly using")
+    o = out_dict['dset']
+
     return o
 
 
@@ -283,23 +243,13 @@ def affine_align(ps, dset, base, suffix="_aff", aff_type="affine"):
 #    -input {input_name} {rewrite}
 #    """
     cmd_str = cmd_str.format(**locals())
-    print(cmd_str)
-    print('this is running')
+
     print("executing:\n %s" % cmd_str)
 
-    if ps.ok_to_exist and o.exist():
-        print("Output already exists. That's okay")
-        return o
-    elif not (o.exist() or ps.rewrite or ps.dry_run()):
-        o.delete(ps.oexec)
-        com = ab.shell_com(cmd_str, ps.oexec, trim_length=2000)
-        com.run(chdir="%s" % o.path)
-        if (not o.exist() and not ps.dry_run()):
-            assert(False)
-            print("** ERROR: Could not align using \n  %s\n" % cmd_str)
-            return None
-    else:
-        ps.exists_msg(o.input())
+    out_dict = {'dset':o}
+    out_dict = run_check_afni_cmd(cmd_str, ps, out_dict, "** ERROR: Could not align using")
+    o = out_dict['dset']
+
     # may only want just rigid, so just apply warp and delete the affine
     # output
     if aff_type == 'rigid':
@@ -309,17 +259,10 @@ def affine_align(ps, dset, base, suffix="_aff", aff_type="affine"):
            -master {base_in} -prefix {out_prefix}  \
            -input {input_name} {rewrite}
            """
-        if (not (o.exist() and mat_exists) or ps.rewrite or ps.dry_run()):
-            o.delete(ps.oexec)
-            com = ab.shell_com(cmd_str, ps.oexec, trim_length=2000)
-            com.run(chdir="%s" % o.path)
-            if (not o.exist() and not ps.dry_run()):
-                assert(False)
-                print("** ERROR: Could not align rigidly using \n  %s\n" % cmd_str)
-                return None
+        out_dict = {'dset':o}
+        out_dict = run_check_afni_cmd(cmd_str, ps, out_dict, "** ERROR: Could not align rigidly using")
+        o = out_dict[dset]
 
-    ab.shell_com("echo Object in rigid align: %s" %
-                 repr(o), ps.oexec, trim_length=2000)
     return o
 
 def aniso_smooth(ps, dset=None, suffix="_as", iters="1"):
@@ -342,17 +285,9 @@ def aniso_smooth(ps, dset=None, suffix="_as", iters="1"):
     cmd_str = "3danisosmooth -3D -iters %s -noneg -prefix %s -mask %s %s" %     \
         (iters, o.out_prefix(), dset.input(), dset.input())
     print("executing:\n %s" % cmd_str)
-    if ps.ok_to_exist and o.exist():
-        print("Output already exists. That's okay")
-    elif (not o.exist() or ps.rewrite or ps.dry_run()):
-        o.delete(ps.oexec)
-        com = ab.shell_com(cmd_str, ps.oexec, trim_length=2000)
-        com.run(chdir="%s" % o.path)
-        if (not o.exist() and not ps.dry_run()):
-            print("** ERROR: Could not anisotropically smooth using \n  %s\n" % cmd_str)
-            return None
-    else:
-        ps.exists_msg(o.input())
+    out_dict = {'dset':o}
+    out_dict = run_check_afni_cmd(cmd_str, ps, out_dict, "** ERROR: Could not anisotropically smooth using")
+    o = out_dict['dset']
 
     return o
 
@@ -384,17 +319,9 @@ def upsample_dset(ps, dset=None, suffix="_rs"):
     cmd_str = "3dresample -dxyz %s %s %s -prefix %s -input %s" %     \
         (min_d, min_d, min_d, o.out_prefix(), dset.input())
     print("executing:\n %s" % cmd_str)
-    if ps.ok_to_exist and o.exist():
-        print("Output already exists. That's okay")
-    elif (not o.exist() or ps.rewrite or ps.dry_run()):
-        o.delete(ps.oexec)
-        com = ab.shell_com(cmd_str, ps.oexec, trim_length=2000)
-        com.run(chdir="%s" % o.path)
-        if (not o.exist() and not ps.dry_run()):
-            print("** ERROR: Could not upsample using:\n  %s\n" % cmd_str)
-            return None
-    else:
-        ps.exists_msg(o.input())
+    out_dict = {'dset':o}
+    out_dict = run_check_afni_cmd(cmd_str, ps, out_dict, "** ERROR: Could not upsample using")
+    o = out_dict['dset']
 
     return o
 
@@ -429,18 +356,9 @@ def resample_dset(ps, dset, base, suffix="_rs"):
         -input %s \
         " % (base_in, out_prefix, input_name)
     print("executing:\n %s" % cmd_str)
-    if ps.ok_to_exist and o.exist():
-        print("Output already exists. That's okay")
-    elif (not o.exist() or ps.rewrite or ps.dry_run()):
-        o.delete(ps.oexec)
-        com = ab.shell_com(cmd_str, ps.oexec, trim_length=2000)
-        com.run(chdir="%s" % o.path)
-        if (not o.exist() and not ps.dry_run()):
-            print("** ERROR: Could not resample to master using:\n  %s\n" %
-                  cmd_str)
-            return None
-    else:
-        ps.exists_msg(o.input())
+    out_dict = {'dset':o}
+    out_dict = run_check_afni_cmd(cmd_str, ps, out_dict, "** ERROR: Could not resample using")
+    o = out_dict['dset']
 
     return o
 
@@ -449,14 +367,19 @@ def min_dim_dset(ps, dset=None):
     """
     find smallest dimension of dataset in x,y,z
     """
-    com = ab.shell_com(
-        "3dAttribute DELTA %s" % dset.input(), ps.oexec, capture=1)
-    if ps.dry_run():
-        return (1.234567)
-    else:
-        com.run()
 
-    min_dx = min([abs(float(com.val(0, i))) for i in range(3)])
+    cmd_str = "3dAttribute DELTA %s" % dset.ppve()
+
+    # we need to establish a new kind of iou type
+    out_dict = {'iou':''}
+    out_dict = run_check_afni_cmd(cmd_str, ps, out_dict, "** ERROR: Could not get dimension attribute using", dry_text="1.234567")
+    iou = out_dict['iou']
+
+    # what to do here?
+    if(iou):
+       min_dx = min([abs(float(com.val(0, i))) for i in range(3)])
+    else:
+       min_dx = 1.0
 
     if(min_dx == 0.0):
         min_dx = 1.0
@@ -482,18 +405,9 @@ def get_mean_brain(dset_list, ps, dset_glob, suffix="_rigid", preprefix=""):
     cmd_str = cmd_str.format(**locals())
     print("executing:\n %s" % cmd_str)
 
-    if ps.ok_to_exist and o.exist():
-        print("Output already exists. That's okay")
-    elif (not o.exist() or ps.rewrite or ps.dry_run()):
-        o.delete(ps.oexec)
-        com = ab.shell_com(cmd_str, ps.oexec, trim_length=2000)
-        com.run(chdir="%s" % o.path)
-        if (not o.exist() and not ps.dry_run()):
-            assert(False)
-            print("** ERROR: Could not compute mean using %s" % cmd_str)
-            return None
-    else:
-        ps.exists_msg(o.input())
+    out_dict = {'dset':o}
+    out_dict = run_check_afni_cmd(cmd_str, ps, out_dict, "** ERROR: Could not compute mean using")
+    o = out_dict['dset']
 
     return o
 
@@ -526,18 +440,9 @@ def get_typical_brain(dists_brains, ps, suffix="_nl", preprefix="typical_"):
     cmd_str = cmd_str.format(**locals())
     print("executing:\n %s" % cmd_str)
 
-    if ps.ok_to_exist and o.exist():
-        print("Output already exists. That's okay")
-    elif (not o.exist() or ps.rewrite or ps.dry_run()):
-        o.delete(ps.oexec)
-        com = ab.shell_com(cmd_str, ps.oexec, trim_length=2000)
-        com.run(chdir="%s" % o.path)
-        if (not o.exist() and not ps.dry_run()):
-            assert(False)
-            print("** ERROR: Could not copy typical subject to mean template directory using %s" % cmd_str)
-            return None
-    else:
-        ps.exists_msg(o.input())
+    out_dict = {'dset':o}
+    out_dict = run_check_afni_cmd(cmd_str, ps, out_dict, "** ERROR: Could not copy typical subject to mean template directory using")
+    o = out_dict['dset']
 
     return o
 
@@ -662,13 +567,14 @@ def prepare_afni_output(ps, dset, suffix, master=[],path=""):
     return o
 
 
-
-def run_check_afni_cmd(cmd_str, ps, o, message):
+def run_check_afni_cmd(cmd_str, ps, out_dict, message, text="1.234568", chdir=None):
     """
     run afni command and check if afni output dataset exists
     return the same output dataset if it exists, otherwise return None
     could have list of outputs
     """
+    # loop over all items in the output dict,
+    # but run command only once
     print("command:\n %s" % cmd_str)
     if ps.ok_to_exist and o.exist():
         print("Output already exists. That's okay")
@@ -960,23 +866,22 @@ def compute_deformation_dist(ps, aa_brain, warp, suffix="_defdist"):
 
     # check if output dataset was created
     o = run_check_afni_cmd(cmd_str, ps, o, "Could not compute deformation distance using")
-    dist_prefix = o.pv()
+    dist_prefix = o.ppv()
 
     # compute mean distance
-    input_name = filled_brain.pv()
+    input_name = filled_brain.ppv()
 
     cmd_str = """\
     3dBrickStat -mask {input_name} -mean {dist_prefix}
     """
     cmd_str = cmd_str.format(**locals())
     print("Running :\n%s" % cmd_str)
-    if(not ps.dry_run()):
-       com = ab.shell_com( cmd_str, ps.oexec, capture=1)
-       com.run()
-       dist = float(com.val(0,0))
+    out_dict = {'iou':''}
+    out_dict = run_check_afni_cmd(cmd_str, ps, out_dict, "** ERROR: Could not find minimum deformation using",chdir=o.path)
+    iou = out_dict['iou']
+    if iou:
+       dist = float(iou(0,0))
     else:
-       com = ab.shell_com( cmd_str, "dry_run")
-       com.run()
        dist = 1.0
 
     return(dist)
@@ -1135,6 +1040,7 @@ def get_nl_mean(ps, delayed, basedset, aa_brains, warpsetlist, resize_brain):
         # may want to find a "typical" brain as intermediate restart
         # this subject has least deformation to current mean brain 
         if(level == ps.findtypical_level):
+            print("finding typical!")
             typical_brain = find_typical_subject(ps, delayed, aa_brains, warpsetlist)
             nl_mean_brain = typical_brain
         # do the nonlinear level of warping toward the current mean
