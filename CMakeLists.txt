@@ -68,8 +68,13 @@ macro(add_afni_target_properties target)
   # Currently this includes setting up post-install linking, prefixing target names with NIFTI_PACKAGE_PREFIX if requests
   set_target_properties(${target} PROPERTIES
     MACOSX_RPATH ON
-    INSTALL_RPATH "${message_RPATH}"
     )
+
+  if (CONDA_BUILD)
+    set_target_properties(${target} PROPERTIES
+      INSTALL_RPATH "${message_RPATH}"
+      )
+  endif()
     # INSTALL_RPATH_USE_LINK_PATH ON
     # SKIP_BUILD_RPATH OFF
     # BUILD_WITH_INSTALL_RPATH OFF
@@ -89,6 +94,11 @@ set(AFNI_INSTALL_RUNTIME_DIR ${BASE_INSTALL_DIR}/bin)
 set(AFNI_INSTALL_INCLUDE_DIR ${BASE_INSTALL_DIR}/include/AFNI)
 endif()
 
+if (CONDA_BUILD)
+  get_filename_component(AFNI_INSTALL_LIBRARY_DIR ${AFNI_INSTALL_LIBRARY_DIR} DIRECTORY)
+  get_filename_component(AFNI_INSTALL_INCLUDE_DIR ${AFNI_INSTALL_INCLUDE_DIR} DIRECTORY)
+  message("The library: " ${AFNI_INSTALL_LIBRARY_DIR})
+endif()
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include(CPack)
