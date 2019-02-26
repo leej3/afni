@@ -2,9 +2,18 @@ cmake_minimum_required(VERSION 3.11 FATAL_ERROR)
 
 execute_process(COMMAND git "describe" "--tags"
   OUTPUT_VARIABLE GIT_REPO_VERSION_UNCLEANED
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  ERROR_QUIET)
 string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+(\\.[0-9]+(\\.g[0-9a-f]+)?)?"
  GIT_REPO_VERSION  "${GIT_REPO_VERSION_UNCLEANED}")
+
+if (GIT_REPO_VERSION STREQUAL "")
+  if (GIT_DESCRIBE_TAG)
+    set(GIT_REPO_VERSION ${GIT_DESCRIBE_TAG})
+  else()
+    set(GIT_REPO_VERSION "99.99.99")
+  endif()
+endif()
 
 project(AFNI
         VERSION ${GIT_REPO_VERSION}
@@ -14,11 +23,13 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(BUILD_SHARED_LIBS ON)
 
 ### Require out-of-source builds
-file(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/CMakeLists.txt" LOC_PATH)
-if(EXISTS "${LOC_PATH}")
-    message(FATAL_ERROR "You cannot build in a source directory (or any directory with a CMakeLists.txt file). Please make a build subdirectory. Feel free to remove CMakeCache.txt and CMakeFiles.")
-endif()
+# file(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/CMakeLists.txt" LOC_PATH)
+# if(EXISTS "${LOC_PATH}")
+#     message(FATAL_ERROR "You cannot build in a source directory (or any directory with a CMakeLists.txt file). Please make a build subdirectory. Feel free to remove CMakeCache.txt and CMakeFiles.")
+# endif()
 
+# Set policies
+cmake_policy(SET CMP0048 NEW)
 
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DAFNI_DEBUG -DIMSEQ_DEBUG -DDISPLAY_DEBUG -DTHD_DEBUG")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_TRACING") # XXX not in default cflags
