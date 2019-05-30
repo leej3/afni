@@ -3,6 +3,11 @@ import os
 from pprint import pformat
 # sys.path.append('/data/NIMH_SSCC/template_making/scripts')
 
+# [PT: Mar 1, 2019] adding new opt to have an input volume to aim for
+# in affx step
+# 
+# ======================================================================
+
 # AFNI modules
 import afni_python.afni_base as ab
 import afni_python.afni_util as au
@@ -49,8 +54,9 @@ class RegWrap():
         self.do_nl_only = 0
         self.nl_level_only = -1  # do only one level of nonlinear alignment
 
-        self.max_workers = 0   # user sets maximum number of workers
-        self.max_threads = 0   # user sets maximum number of threads
+        self.aff_vol_rsz = -1.0 # [PT: Mar 1, 2019] 
+        self.max_workers = 0    # user sets maximum number of workers
+        self.max_threads = 0    # user sets maximum number of threads
         self.warpsets = []
         self.cluster_queue = []
         self.cluster_memory = []
@@ -58,6 +64,8 @@ class RegWrap():
         self.cluster_walltime = []
         self.aniso_iters = "1"
         self.upsample_level = [] # no upsampling by default
+        self.findtypical_final = None
+        self.final_space = None
         return
 
     def init_opts(self):
@@ -104,6 +112,10 @@ class RegWrap():
                                 helpstr="Unifize mean templates")
         self.valid_opts.add_opt('-anisosmooth', 0, [],
                                 helpstr="anisotropically smooth mean templates")
+        self.valid_opts.add_opt('-findtypical_final', 0, [],
+                                helpstr="Find subject closest to final template")
+        self.valid_opts.add_opt('-final_space', 1, [],
+                                helpstr="Provide name of '-space ..' field")
 
         self.valid_opts.add_opt('-no_rigid', 0, [],
                                 helpstr="Do not do rigid alignment step,\n"
@@ -136,6 +148,9 @@ class RegWrap():
                                 helpstr="port for Bokeh visual debugging info with Dask")
         self.valid_opts.add_opt('-max_workers', 1, [],
                                 helpstr="maximum number of cpus used for this Dask process")
+        # [PT: Mar 1, 2019]
+        self.valid_opts.add_opt('-aff_vol_rsz', 1, [],
+                                helpstr="Rescale the affine step's mean to this value (>0).")
         self.valid_opts.add_opt('-max_threads', 1, [],
                                 helpstr="maximum number of threads used for this Dask process")
         self.valid_opts.add_opt('-cluster_queue', 1, [],
@@ -219,6 +234,14 @@ class RegWrap():
             self.bokeh_port = int(opt.parlist[0])
             if((opt == "") or (opt == " ")):
                 self.error_msg("Must provide a port number for bokeh port")
+                self.ciao(1)
+
+        # [PT: Mar 1, 2019]
+        opt = opt_list.find_opt('-aff_vol_rsz')
+        if opt != None:
+            self.aff_vol_rsz = float(opt.parlist[0])
+            if((opt == "") or (opt == " ") or (self.aff_vol_rsz <= 0)):
+                self.error_msg("Must provide a volume value (>0 mm^3) for resizing")
                 self.ciao(1)
 
         opt = opt_list.find_opt('-max_workers')
@@ -448,6 +471,16 @@ class RegWrap():
         opt = self.user_opts.find_opt('-unifize_template')
         if opt != None:
             self.do_unifize_template = 1
+
+        # findtypical_final off by default
+        opt = self.user_opts.find_opt('-findtypical_final')
+        if opt != None:
+            self.findtypical_final = 1
+
+        # final_space name: off by default
+        opt = self.user_opts.find_opt('-final_space')
+        if opt != None:
+            self.final_space = opt.parlist[0]
 
         # rigid alignment is on by default
         opt = self.user_opts.find_opt('-no_rigid')
