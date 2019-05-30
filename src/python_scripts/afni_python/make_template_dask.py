@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# [PT: Mar 1, 2019] adding new opt to have an input volume to aim for
+# in affx step
+# 
+# ======================================================================
+
+
 # way to run script example
 # python make_template_dask.py \
 #  -dsets /dsets/*.HEAD -init_base ~/abin/MNI_2009c.nii.gz -ex_mode dry_run
@@ -72,7 +78,10 @@ g_help_string = """
     -no_rigid   : skip rigid alignment phase
     -ok_to_exist: skip over preexisting results to continue as quickly
                   as possibly with a restart
-    -max_workers: maximum number of workers for process
+    -max_workers MW: maximum number of workers for process
+    -aff_vol_rsz VOL: Rescale the affine step's mean to this value (>0)
+    -findtypical_final: find the single-subj vol most-well aligned to ave temp
+    -final_space FINSP: give a 'space' name to the final output
 
     ---------------------------------------------
 """
@@ -150,7 +159,7 @@ if (daskmode != "None"):
             queue=cluster_queue,
             memory =  cluster_memory,
             processes=1,
-            threads = 8,
+            cores = 8,
             job_extra = [cluster_constraint, cluster_walltime] )
 
         print("starting %d workers!" % n_workers)
