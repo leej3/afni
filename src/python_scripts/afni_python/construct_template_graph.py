@@ -1,6 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# [PT: Feb 28, 2019] starting to update to have 'rescaling' of affine
+# vol to match a user-specified one (e.g., mean of input values).
+# 
+# [PT: Apr 9, 2019] 
+# + final_space name is applied from tp0 onward, if user opts for it
+# + tp*{mean,stdev}* files are denoted, because histories were so long.
+# 
+# ===========================================================================
+
 import afni_python.afni_base as ab
 
 from afni_python.pipeline_utils import (
@@ -312,6 +321,113 @@ def min_dim_dset(ps, dset=None):
         min_dx = 1.0
     return min_dx
 
+# -------------------------------------------------------------------------
+
+# [PT: Feb 28, 2019] Rescale affine mean to user-specified volume
+def rescale_affx_brain(ps, dset, suffix="_rescld", preprefix=""):
+    ''' Rescale affine mean to user-specified volume, for improving later resizing'''
+
+    # end with a slash
+    print("cd %s" % ps.odir)
+    if(not ps.dry_run()):
+        os.chdir(ps.odir)
+
+    # 1) automask separately (b/c we have to...)
+
+    # basically, an intermediate vol
+    omask = prepare_afni_output(ps, dset, suffix="_mask")
+
+    cmd_str = '''     \
+    3dAutomask        \
+        -overwrite    \
+        -prefix {}    \
+        {}
+    '''.format( omask.out_prefix(), dset.input())
+
+    if ps.ok_to_exist and omask.exist():
+        print("Output already exists. That's okay")
+    elif (not omask.exist() or ps.rewrite or ps.dry_run()):
+        omask.delete(ps.oexec)
+        com = ab.shell_com(cmd_str, ps.oexec, trim_length=2000)
+        com.run(chdir="%s" % omask.path)
+        if (not omask.exist() and not ps.dry_run()):
+            assert(False)
+            print("** ERROR: Could not compute mean using %s" % cmd_str)
+            return None
+    else:
+        ps.exists_msg(omask.input())
+
+
+    # 2) get brickstat info-- the volume of the new mask
+    com = ab.shell_com(
+        "3dBrickStat -volume -non-zero {}+tlrc.HEAD".format(omask.out_prefix()),
+        ps.oexec, capture=1 )
+    if ps.dry_run():
+        return (1.234567)
+    else:
+        com.run()
+    # ... and get the single output value, which is the intracranial
+    # volume of that mask
+    icv_mask = float(com.val(0, 0))
+
+    print("++ Pre-rescaling, ICV of affx mask is: {}".format(icv_mask))
+    print("++ Will aim for ICV of:                {}".format(ps.aff_vol_rsz))
+
+    # 3) calculate the appropriate ratio-- which is 1/(the value I
+    # thought initially it would be!  ... but that is because I wasn't
+    # thinking of it correctly, which is "from the base grid's point of view"
+    icv_ratio = ( icv_mask / float(ps.aff_vol_rsz) ) ** 0.333
+
+    # 4) make a matrix using that rescaling
+    mat_rescale = '{} 0.0 0.0 0.0 '.format(icv_ratio)
+    mat_rescale+= '0.0 {} 0.0 0.0 '.format(icv_ratio)
+    mat_rescale+= '0.0 0.0 {} 0.0 '.format(icv_ratio)
+
+    mat_file    = 'mat_rescale_affx.aff12.1D'
+    
+    # Just du it (in non-trademark-violating way)
+    f = open(mat_file, 'w')
+    f.write( mat_rescale )
+    f.close()
+
+    #cmd_str = '''\
+    #echo "{}" > {}
+    #'''.format( mat_rescale, mat_file )
+
+    # 5) Apply that rescaling to the volume
+
+    # create output dataset structure: I think the 'master' dset is
+    # just in the main dset-- we aren't regridding, we are just
+    # rescaling/resizing the existing affx within its same volume (we
+    # assume it is well within its FOV's bounds, if expanding)
+    o = prepare_afni_output(ps, dset, suffix)
+
+    cmd_str = '''\
+    3dAllineate        \
+    -1Dmatrix_apply {} \
+    -source         {} \
+    -master         {} \
+    -prefix         {} \
+    -final wsinc5
+    '''.format( mat_file, dset.input(), dset.input(), o.out_prefix() )
+
+    if ps.ok_to_exist and o.exist():
+        print("Output already exists. That's okay")
+    elif (not o.exist() or ps.rewrite or ps.dry_run()):
+        o.delete(ps.oexec)
+        com = ab.shell_com(cmd_str, ps.oexec, trim_length=2000)
+        com.run(chdir="%s" % o.path)
+        if (not o.exist() and not ps.dry_run()):
+            assert(False)
+            print("** ERROR: Could not compute mean using %s" % cmd_str)
+            return None
+    else:
+        ps.exists_msg(o.input())
+
+    return o
+
+
+# -------------------------------------------------------------------------
 
 def get_mean_brain(dset_list, ps, dset_glob, suffix="_rigid", preprefix=""):
     """
@@ -356,9 +472,18 @@ def get_typical_brain(dists_brains, ps, suffix="_nl", preprefix="typical_"):
     o.view = typ_brain.view
     output_prefix = o.ppv()
 
+    # add in *here* to do the "final space" update on first average
+    # dset, because then it should propagate everywhere
+    new_space = ''
+    if ps.final_space and suffix == "_rigid" :
+        new_space = '-view tlrc -space ' + ps.final_space
+
+    # !! in this cmd_str, should prob use 'o.ppv()' instead of '{preprefix}mean{suffix}'?
+    # now also "denote" this files, because the histories get ginormous
     cmd_str = """\
     3dcopy {typ_brain_input} {output_prefix}
     """
+
     cmd_str = cmd_str.format(**locals())
     print("executing:\n %s" % cmd_str)
 
@@ -426,6 +551,15 @@ def get_affine_mean(ps, basedset, dsetlist, delayed):
         ps,
         dset_glob="*/*_affx" + file_ending,
         suffix="_affx", preprefix="tp1_")
+
+    # [PT: March 1, 2019] this would make new obj of same name
+    # 'affine_mean_brain' that would get passed along for further
+    # usage, IF the user flags it.
+    # This will be the RESCALED base for later RESIZING (of NL warps).
+    if ps.aff_vol_rsz > 0:
+        print("++ Will rescale affine mean to this vol: {}".format(ps.aff_vol_rsz))
+        affine_mean_brain = delayed(rescale_affx_brain)(ps, affine_mean_brain, 
+                                                        suffix="_rescld")
 
     print("Configured first processing loop")
     # return the rigid mean brain template and the rigidly aligned_brains
@@ -621,6 +755,358 @@ def upsample_subjects_bases(ps, delayed, target_brain, aa_brains,
             'aa_brains_us': aa_brains_out,
             'warpsetlist_us': warpsetlist_out}
 
+# -------------------------------------------------------------------------------
+
+# [PT: Mar 6, 2019] different way to find typical brain: use cost
+# function evaluation of similarity of final warp
+def compute_allineatecost_vals( ps, base_brain, src_brain, 
+                                suffix="_alcost", alcost="lpa" ):
+    '''Find subject whose individual, warped brain (=base here) best
+    matches the mean template (=source here, to be consistently
+    automasked across the tests), as quantified by a cost function
+    evaluation.
+    
+    Just produce a text file to read in the subject data directory.
+
+    Returns a value of a cost function (to be compared throughout
+    group).
+
+    '''
+
+    # get location/name from base_brain
+    otxt       = base_brain.path + '/'
+    otxt      += base_brain.out_prefix() + "_alcost_" + alcost + ".txt"
+    src_dset   = src_brain.ppv()
+    base_dset  = base_brain.ppv()
+
+    print("++ Filename with 3dAllineate cost value: {}".format(otxt))
+    print("      base_brain: {}".format(base_dset))
+    print("      src_brain : {}".format(src_dset))
+
+    # this doesn't create a new DSET, just a text file to store alcost
+    # values. Don't need to capture output.
+    cmd_str = '''\
+    3dAllineate                        \
+    -echo_edu                          \
+    -overwrite                         \
+    -allcostX1D "IDENTITY" {}          \
+    -base       {}                     \
+    -source     {}                     \
+    -source_automask
+    '''.format(otxt, base_dset, src_dset)
+
+    com     = ab.shell_com( cmd_str, ps.oexec, capture=0 ) 
+    com.run(chdir="%s" % base_brain.path)  # write locally per 'base' dset
+    print("  ran for base_brain : {}".format(src_dset))
+
+    # Make a dictionary of cost function results by reading the created file
+    cost_dict = parse_allineatecost_vals(otxt)
+    print("  through here for base_brain : {}".format(src_dset))
+
+    if not( alcost in cost_dict) :
+        print("** ERROR: This cost file {} does not contain asked-for "
+              "cost func {}!".format(otxt, alcost))
+        return None
+
+    ocost = cost_dict[alcost]
+
+    print("++ Extracted cost value ({}): {}".format(alcost, ocost))
+
+    return(ocost)
+
+    
+# -------------------------------------------------------------------------------
+
+# [PT: Mar 6, 2019]
+def parse_allineatecost_vals(fname):
+    '''Read in output of "3dAllineate -allcostX1D ... ... ", and return a
+dictionary of the cost function values.
+    '''
+
+    fff = open(fname, 'r')
+    x = fff.readlines()
+    fff.close()
+
+    N = len(x)
+    if N < 3: 
+        print("** ERROR: This cost file {} does not have (at least) 3 lines,\n"
+              "   like I expected!".format(fname))
+        return None
+
+    # 0) check file format
+    if not( '3dAllineate -allcostX1D results' in x[0]) :
+        print("** ERROR: Line 0 of cost file {} does not look like 3dAllineate\n"
+              "   cost output!".format(fname))
+        return None
+
+    # 1) get cost names, which are all in a particular line
+    if x[1][0] != '#':
+        print("** ERROR: Line 1 of cost file {} does not start with 'X',\n"
+              "   like I expected!".format(fname))
+        return None
+
+    aaa   = x[1][1:]
+    bbb   = aaa.replace('_', ' ')
+    lcost = bbb.split()                # list of cost functions
+    Ncost = len(lcost)
+
+    # 2) get cost vals, which are all in a particular line
+    fff   = x[2][0:]
+    lvals = fff.split()                # list of cost vals
+    Nvals = len(lvals)
+    
+    #print(lcost)
+    #print(lvals)
+
+    if Ncost != Nvals:
+        print("** ERROR: Number of costs ({}) != number of values ({})\n"
+              "   in {}!".format(Ncost, Nvals, fname))
+        return None
+
+    odict = {}
+    for i in range(Ncost):
+        odict[lcost[i]] = float(lvals[i])
+
+    return odict
+
+# -------------------------------------------------------------------------------
+
+def compute_deformation_dist(ps, aa_brain, warp, suffix="_defdist"):
+    """
+    find mean deformation distance in deformation maps masked by original brain
+    """
+
+    # create output dataset structure
+    o = prepare_afni_output(ps, aa_brain, suffix)
+
+    warp_name = warp.pv()
+    out_prefix = o.out_prefix()
+    # inverse warp to compute distance in affine space (before nonlinear warp)
+    inv_warp = prepare_afni_output(ps, warp, "_inv")
+    inv_warp_prefix = inv_warp.out_prefix()
+    inv_warp_name = inv_warp.pv()
+
+    if ps.rewrite:
+        rewrite = " -overwrite "
+    else:
+        rewrite = ""
+	
+    cmd_str = """\
+    3dNwarpCat -warp1 \'INV({warp_name})\' -prefix {inv_warp_prefix} \
+    {rewrite}
+    """
+    cmd_str = cmd_str.format(**locals())
+    # check if inverse warp output dataset was created
+    inv_warp = run_check_afni_cmd(cmd_str, ps, inv_warp, "Could not compute inverse warp using")
+
+    # fill holes in brain
+    filled_brain = prepare_afni_output(ps, aa_brain, "_filled")
+    input_name = aa_brain.pv()
+    filled_brain_name = filled_brain.pv()
+    filled_brain_prefix = filled_brain.out_prefix()
+
+    # fill holes to account for ventricles and such
+    cmd_str = """\
+    3dmask_tool -fill_holes  \
+    -prefix {filled_brain_prefix} -inputs {input_name} \
+    {rewrite}
+    """
+
+    cmd_str = cmd_str.format(**locals())
+
+    # check if output dataset was created
+    filled_brain = run_check_afni_cmd(cmd_str, ps, filled_brain, "Could not fill holes using")
+
+    zp_inv_warp = prepare_afni_output(ps, warp, "_inv_zp")
+    zp_inv_warp_prefix = zp_inv_warp.out_prefix()
+    zp_inv_warp_name = zp_inv_warp.pv()
+
+    if ps.rewrite:
+        rewrite = " -overwrite "
+    else:
+        rewrite = ""
+	
+    cmd_str = """\
+    3dZeropad -master {filled_brain_name} -prefix {zp_inv_warp_prefix} \
+    {rewrite} {inv_warp_name}
+    """
+    cmd_str = cmd_str.format(**locals())
+    # check if inverse warp output dataset was created
+    zp_inv_warp = run_check_afni_cmd(cmd_str, ps, zp_inv_warp, "Could not zeropad inverse warp using")
+
+
+    # compute deformation distance at every voxel (3dcalc is another way,
+    #   but with mask option especially,this should be a little faster)
+    cmd_str = """\
+    3dTstat -mask {filled_brain_name} -l2norm  \
+    -prefix {out_prefix} \
+    {rewrite}  {zp_inv_warp_name}
+    """
+
+    cmd_str = cmd_str.format(**locals())
+
+    # check if output dataset was created
+    o = run_check_afni_cmd(cmd_str, ps, o, "Could not compute deformation distance using")
+    dist_prefix = o.ppv()
+
+    # compute mean distance
+    input_name = filled_brain.ppv()
+
+    cmd_str = """\
+    3dBrickStat -mask {input_name} -mean {dist_prefix}
+    """
+    cmd_str = cmd_str.format(**locals())
+    print("Running :\n%s" % cmd_str)
+    if(not ps.dry_run()):
+       com = ab.shell_com( cmd_str, ps.oexec, capture=1)
+       com.run()
+       dist = float(com.val(0,0))
+    else:
+       com = ab.shell_com( cmd_str, "dry_run")
+       com.run()
+       dist = 1.0
+
+    return(dist)
+
+def itemgetter(*items):
+    if len(items) == 1:
+        item = items[0]
+        def g(obj):
+            return obj[item]
+    else:
+        def g(obj):
+            return tuple(obj[item] for item in items)
+    return g
+
+def get_typical_brain(costs_brains, ps, suffix="_nl", preprefix="typical_"):
+    """
+    compute typical subjects from across a group of datasets given
+    tuple list of costs and subject brains
+    costs calculated before, in another function
+    """
+    assert(costs_brains[0][0] is not None)
+
+    # sort the costances with their corresponding subject brain datasets
+    scost = sorted(costs_brains, key=itemgetter(0))
+    typ_brain = scost[0][1]
+    typ_brain_input = typ_brain.ppv()
+    print("typical brain is %s with cost %f" % (typ_brain.prefix, scost[0][0]))
+
+    print("cd %s" % ps.odir)
+    if(not ps.dry_run()):
+        os.chdir(ps.odir)
+
+    # Use this naming to make it a NIFTI: cannot be zipped for
+    # nifti_tool's usage later!
+    o = ab.afni_name("%ssubject%s.nii" % (preprefix, suffix)) 
+    o.path = ps.odir
+    oname = o.ppv()
+
+    otmp1  = o.path + "/__tmp1_mask.nii"
+    otmp2  = o.path + "/__tmp2_mask_round.nii"
+    otmp2b = o.path + "/__tmp2b_mskd_inp.nii"
+    otmp3  = o.path + "/__tmp3_mask_anti.nii"
+    otmp4  = o.path + "/__tmp4_mask_round_localst.nii"
+    otmp5  = o.path + "/__tmp5_mskd_rounded.nii"
+
+    #cmd_str = """\
+    #3dAutomask -apply_prefix {oname} {typ_brain_input} 
+    #"""    
+
+    # make a smoother-bounded mask+output
+    cmd_str = """\
+    3dAutomask -prefix {otmp1} {typ_brain_input}; \
+    3dmask_tool -dilate_input -2 3 -input {otmp1} -prefix {otmp2}; \
+    3dcalc -a {otmp2} -b {typ_brain_input} -expr 'step(a)*b' -prefix {otmp2b}; \
+    3dcalc -a {otmp2} -b {otmp2b} -expr 'step(a)*not(b)' -prefix {otmp3}; \
+    3dLocalstat -nbhd 'SPHERE(2.2)' -mask {otmp2} -prefix  {otmp4} -stat perc:25 {otmp2b}; \
+    3dcalc -a {otmp4} -b {otmp2b} -expr 'b+not(b)*a' -prefix {otmp5}; \
+    3dSharpen -input {otmp5} -prefix {oname} ; \
+    rm {otmp1} {otmp2} {otmp2b} {otmp3} {otmp4} {otmp5}
+    """  
+
+    cmd_str = cmd_str.format(**locals())
+    print("executing:\n %s" % cmd_str)
+
+    if ps.ok_to_exist and o.exist():
+        print("Output already exists. That's okay")
+    elif (not o.exist() or ps.rewrite or ps.dry_run()):
+        o.delete(ps.oexec)
+        com = ab.shell_com(cmd_str, ps.oexec, trim_length=2000)
+        com.run(chdir="%s" % o.path)
+        if (not o.exist() and not ps.dry_run()):
+            assert(False)
+            print("** ERROR: Could not copy typical subject to mean template directory using %s" % cmd_str)
+            return None
+
+        typ_file    = 'typical_subject_nl.txt'
+    
+        # save ID of typical
+        f = open(typ_file, 'w')
+        f.write( typ_brain.prefix )
+        f.close()
+
+        # and finalize/anonymize a bit
+        new_space = ''
+        if ps.final_space :
+            new_space+= '-space ' + ps.final_space
+
+        new_view = typ_brain.view # make sure it matches
+
+        # also, adjust header info
+        cmd_str = """\
+        nifti_tool -mod_hdr -mod_field sform_code 5 \
+        -mod_field qform_code 5 -overwrite -infiles {oname} ; \
+        3drefit -echo_edu -denote -view {new_view} {new_space} {oname}
+        
+        """
+        cmd_str = cmd_str.format(**locals())
+
+        com = ab.shell_com(cmd_str, ps.oexec, trim_length=2000)
+        com.run(chdir="%s" % o.path)
+
+    else:
+        ps.exists_msg(o.input())
+
+    return o
+
+def find_typical_subject(ps, delayed, aa_brains, nl_mean_brain,
+                         warpsetlist, template_space=None): #**kwargs):
+    """
+    find typical subject, i.e. one with the lowest deformation distance
+    given a list of subjects and a list of deformation maps-dx,dy,dz
+    """
+
+    # need at least an empty matching list of warps as input
+    if not warpsetlist:
+        warpsetlist = [''] * len(aa_brains)
+        print("no warp list provided to find typical subject. This should never happen")
+        return []
+
+    # initialize the list of output distances and brains
+    costs_brains = []
+    
+    # compute deformation distance for all the affine brains and the warps
+    for (aa_brain, warp) in zip(aa_brains,warpsetlist):
+
+        ### [PT: Mar 6, 2019] no longer using DIST, using 3dAllineate's cost evaluation
+        aa_cost = delayed(compute_allineatecost_vals)(ps, 
+                                                      aa_brain,       # base
+                                                      nl_mean_brain ) # source 
+
+        ### [OLD] compute distance
+        #aa_dist  = delayed(compute_deformation_dist)(
+        #ps, aa_brain, warp, suffix="_defdist")
+
+        # add the outputs to the list as a list of tuples of distance and brains
+        costs_brains.append((aa_cost, aa_brain))
+    # sort distances to find typical brain and make copy
+    typ_brain = delayed(get_typical_brain)( costs_brains,
+                                            ps)
+
+    # return subject brain with shortest distance
+    return(typ_brain)
+     
 
 def compute_deformation_dist(ps, aa_brain, warp, suffix="_defdist"):
     """
@@ -1082,7 +1568,16 @@ def get_task_graph(ps, delayed):
                                                                      resize_brain
                                                                      )
 
-    # transform maximum probability map (MPM) atlas from
+    # final request for a typical subject
+    if(ps.findtypical_final):
+        # we want the nl_aligned_brains set here-- ones that should
+        # overlay the mean template well, that have been aligned to make it
+        typical_brain = find_typical_subject(ps, delayed, nl_aligned_brains, 
+                                             nl_mean_brain, nl_warpsetlist)
+    else:
+        typical_brain = None
+
+    # transform maximum probability map (MPM) atlas from 
     # FreeSurfer segmentation
     if ps.do_freesurf_mpm:
         raise ValueError(
@@ -1091,6 +1586,7 @@ def get_task_graph(ps, delayed):
         freesurf_mpm = make_freesurf_mpm(ps,
                                          delayed, fs_segs, aligned_brains, nl_warpsetlist,
                                          suffix="_FS_MPM")
+       task_graph = (nl_mean_brain, nl_warpsetlist, nl_aligned_brains, typical_brain)
 
     else:
         task_graph_dict = OrderedDict([

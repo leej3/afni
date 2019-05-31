@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# [PT: Mar 1, 2019] adding new opt to have an input volume to aim for
+# in affx step
+# 
+# ======================================================================
+
+
 # way to run script example
 # make_template_dask.py  -ok_to_exist \
 # -dsets [space_separated_list_of_datasets] \
@@ -57,7 +63,10 @@ g_help_string = """
     -no_rigid   : skip rigid alignment phase
     -ok_to_exist: skip over preexisting results to continue as quickly
                   as possibly with a restart
-    -max_workers: maximum number of workers for process
+    -max_workers MW: maximum number of workers for process
+    -aff_vol_rsz VOL: Rescale the affine step's mean to this value (>0)
+    -findtypical_final: find the single-subj vol most-well aligned to ave temp
+    -final_space FINSP: give a 'space' name to the final output
 
     ---------------------------------------------
 """
