@@ -436,9 +436,23 @@ def get_mean_brain(dset_list, ps, dset_glob, suffix="_rigid", preprefix=""):
     assert(dset_list[0] is not None)
     file_ending = dset_list[0].view + dset_list[0].extension
     o = dset_list[0].new("%smean%s%s" % (preprefix, suffix, file_ending))
-    cmd_str = """\
-    3dMean -prefix {o.initname}  {dset_glob}; \
-    3dMean -stdev -prefix {preprefix}stdev{suffix}{file_ending} {dset_glob}
+    if o.type == 'NIFTI':
+        oview = ''
+    else:
+        oview = o.view
+
+    # add in *here* to do the "final space" update on first average
+    # dset, because then it should propagate everywhere
+    if ps.final_space and suffix == "_rigid":
+        new_space = '-space ' + ps.final_space
+    else:
+        new_space = ''
+
+    cmd_str = """
+    3dMean -prefix {o.initname}  {dset_glob}; 
+    3dMean -stdev -prefix {preprefix}stdev{suffix}{file_ending} {dset_glob};
+    3drefit -denote {new_space} {preprefix}mean{suffix}{oview}; 
+    3drefit -denote {new_space} {preprefix}stdev{suffix}{oview}
     """
     cmd_str = cmd_str.format(**locals())
 
@@ -1586,13 +1600,13 @@ def get_task_graph(ps, delayed):
         freesurf_mpm = make_freesurf_mpm(ps,
                                          delayed, fs_segs, aligned_brains, nl_warpsetlist,
                                          suffix="_FS_MPM")
-       task_graph = (nl_mean_brain, nl_warpsetlist, nl_aligned_brains, typical_brain)
 
     else:
         task_graph_dict = OrderedDict([
             ('nl_mean_brain', nl_mean_brain),
             ('nl_warpsetlist', nl_warpsetlist),
             ('nl_aligned_brains', nl_aligned_brains)
+            ('typical_brain',typical_brain)
         ])
 
     # nl_mean_brain template and MPM atlas are our final output
