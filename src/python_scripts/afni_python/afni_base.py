@@ -566,6 +566,7 @@ class afni_name(object):
           'fn':self.fn,
           'ffn':self.ffn,
           'initpath':self.initpath,
+          'initname':self.initname,
           })
       return pformat(dict_out)
 
