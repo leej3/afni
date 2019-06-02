@@ -204,6 +204,9 @@ if __name__ == '__main__':
         # task_graph = dask_job_wrapper.run(ps,delayed,client) # useful for reloading modules
         # Display dashboard address for both local and cluster clients
         print("The dashboard can be opened on this host at: %s" % client.cluster.dashboard_link)
+        if(ps.visualize_graph):
+            task_graph_dict[graph_output_key].visualize(filename='taskgraph.svg')
+            ps.ciao(0)
 
         # The following command executes the task graph and returns futures 
         if(daskmode == "SLURM"):
