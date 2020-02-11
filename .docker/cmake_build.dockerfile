@@ -1,6 +1,6 @@
 FROM afni/afni_dev_base
 
-ENV AFNI_ROOT=/opt/afni
+ENV AFNI_ROOT=/opt/src/afni
 ENV INSTALL_DIR=/opt/abin
 
 # Copy AFNI source code. This will likely invalidate the build cache.
