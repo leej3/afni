@@ -124,11 +124,8 @@ add_custom_target(
 # Define PATH modification required for within build tree tests execution
 set(BUILD_BINARIES ${CMAKE_CURRENT_BINARY_DIR}/src)
 set(T_SCRIPTS ${CMAKE_CURRENT_SOURCE_DIR}/src/scripts_install)
-set(P_SCRIPTS ${CMAKE_CURRENT_SOURCE_DIR}/src/python_scripts/afni_python)
-set(R_SCRIPTS ${CMAKE_CURRENT_SOURCE_DIR}/src/R_scripts)
-set(J_SCRIPTS ${CMAKE_CURRENT_SOURCE_DIR}/src/jzosky)
-set(J_SCRIPTS "${J_SCRIPTS}:${J_SCRIPTS}/lib_RetroTS")
-set(TESTING_PATHS "${BUILD_BINARIES}:${T_SCRIPTS}:${P_SCRIPTS}:${R_SCRIPTS}:${J_SCRIPTS}")
+set(R_SCRIPTS ${CMAKE_CURRENT_SOURCE_DIR}/src/scripts_for_r)
+set(TESTING_PATHS "${BUILD_BINARIES}:${T_SCRIPTS}:${R_SCRIPTS})
 set(PATH_FOR_TESTING "${TESTING_PATHS}:$ENV{PATH}")
 file(WRITE ${CMAKE_BINARY_DIR}/TESTING_PATHS.txt ${TESTING_PATHS})
 
