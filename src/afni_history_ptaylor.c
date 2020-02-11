@@ -392,7 +392,7 @@ afni_history_struct ptaylor_history[] = {
    "User just needs '.pdf' file extension on prefix.\n"
 },
 
-{ 18, July , 2019 , PT , "@djunct_make_script_and_rst.py", MICRO , TYPE_BUG_FIX,
+{ 18, July , 2019 , PT , "djunct_make_script_and_rst.py", MICRO , TYPE_BUG_FIX,
    "Used to crash if output dir was PWD.",
    "Now fixed.\n"
 },
@@ -412,12 +412,12 @@ afni_history_struct ptaylor_history[] = {
    "Also simplify text of radcorr block (fewer lines, less unnec repetition).\n"
 },
 
-{ 10, July , 2019 , PT , "@djunct_make_script_and_rst.py", MINOR , TYPE_GENERAL,
+{ 10, July , 2019 , PT , "djunct_make_script_and_rst.py", MINOR , TYPE_GENERAL,
    "Can have text in the image tables now.",
    "Facilitates labelling, commenting, etc.\n"
 },
 
-{ 9, July , 2019 , PT , "@djunct_make_script_and_rst.py" , MINOR , TYPE_GENERAL,
+{ 9, July , 2019 , PT , "djunct_make_script_and_rst.py" , MINOR , TYPE_GENERAL,
    "Allow for multiple scripts to be executed, run and combined into 1 page.",
    "Single script tarball, single RST, can have multiple scripts/reflinks.\n"
 },
@@ -427,7 +427,7 @@ afni_history_struct ptaylor_history[] = {
    "New opt to not clean: -no_clean. -do_clean is fine to use, just boring.\n"
 },
 
-{ 8, July , 2019 , PT , "@djunct_make_script_and_rst.py" , MINOR , TYPE_GENERAL,
+{ 8, July , 2019 , PT , "djunct_make_script_and_rst.py" , MINOR , TYPE_GENERAL,
    "Allow wildcard chars in IMAGE descrip; SUBSECTIONS added.",
    "Minor tweaks for formatting help files.\n"
 },
@@ -472,12 +472,12 @@ afni_history_struct ptaylor_history[] = {
    "Intermediate resampling now reduces/removes var due to start.\n"
 },
 
-{ 20, June , 2019 , PT , "@djunct_make_script_and_rst.py" , MICRO , TYPE_BUG_FIX,
+{ 20, June , 2019 , PT , "djunct_make_script_and_rst.py" , MICRO , TYPE_BUG_FIX,
    "Use the CAPTION feature on image tables in text blocks.",
    "Also fix help display.\n"
 },
 
-{ 19, June , 2019 , PT , "@djunct_make_script_and_rst.py" , MICRO , TYPE_NEW_PROG,
+{ 19, June , 2019 , PT , "djunct_make_script_and_rst.py" , MICRO , TYPE_NEW_PROG,
    "New prog for Sphinx doc generation (well, assistance).",
    "Somewhat simple markup scheme used to generate RST, images and scripts.\n"
 },
@@ -532,7 +532,7 @@ afni_history_struct ptaylor_history[] = {
    "Also, the pbar text info will now be stored in dict/JSON-able form.\n"
 },
 
-{ 1, May , 2019 , PT , "@djunct_is_label.py" , MICRO , TYPE_GENERAL,
+{ 1, May , 2019 , PT , "djunct_is_label.py" , MICRO , TYPE_GENERAL,
    "Tiny program to see if input is an integer (-> index) or str (-> label).",
    "Just used by @chauffeur_afni for -set_subbricks reading.\n"
 },
@@ -697,17 +697,17 @@ afni_history_struct ptaylor_history[] = {
    "Before, 'none' was padded with newline chars, but Mac doesn't like :(.\n"
 },
 
-{ 5, Dec , 2018 , PT , "@djunct_select_str.py" , MINOR , TYPE_GENERAL,
+{ 5, Dec , 2018 , PT , "djunct_select_str.py" , MINOR , TYPE_GENERAL,
    "Have removed numpy dependency.",
    "Lighter installation/usage dependencies.\n"
 },
 
-{ 5, Dec , 2018 , PT , "@djunct_combine_str.py" , MINOR , TYPE_GENERAL,
+{ 5, Dec , 2018 , PT , "djunct_combine_str.py" , MINOR , TYPE_GENERAL,
    "Have removed numpy dependency.",
    "Lighter installation/usage dependencies.\n"
 },
 
-{ 5, Dec , 2018 , PT , "@djunct_calc_mont_dims.py" , MINOR , TYPE_GENERAL,
+{ 5, Dec , 2018 , PT , "djunct_calc_mont_dims.py" , MINOR , TYPE_GENERAL,
    "Have removed numpy dependency.",
    "Lighter installation/usage dependencies.\n"
 },
@@ -897,7 +897,7 @@ afni_history_struct ptaylor_history[] = {
    "Many new features, probably including minor bug fixes.\n"
 },
 
-{ 25, July , 2018 , PT , "@djunct_calc_mont_dims.py" , MINOR , TYPE_BUG_FIX,
+{ 25, July , 2018 , PT , "djunct_calc_mont_dims.py" , MINOR , TYPE_BUG_FIX,
    "Was excluding solution of a square set of dimensions.",
    "Tested; seems fine now.\n"
 },
@@ -907,17 +907,17 @@ afni_history_struct ptaylor_history[] = {
    "This way, failure to write file exits nonzeroly.\n"
 },
 
-{ 17, July , 2018 , PT , "@djunct_select_str.py" , MICRO , TYPE_GENERAL,
+{ 17, July , 2018 , PT , "djunct_select_str.py" , MICRO , TYPE_GENERAL,
    "Converted to python3 compatible, using 2to3.",
    "Tested; seems fine.\n"
 },
 
-{ 17, July , 2018 , PT , "@djunct_combine_str.py" , MICRO , TYPE_GENERAL,
+{ 17, July , 2018 , PT , "djunct_combine_str.py" , MICRO , TYPE_GENERAL,
    "Converted to python3 compatible, using 2to3.",
    "Tested; seems fine.\n"
 },
 
-{ 17, July , 2018 , PT , "@djunct_calc_mont_dims.py" , MICRO , TYPE_GENERAL,
+{ 17, July , 2018 , PT , "djunct_calc_mont_dims.py" , MICRO , TYPE_GENERAL,
    "Converted to python3 compatible, using 2to3.",
    "Tested; seems fine.\n"
 },
@@ -942,7 +942,7 @@ afni_history_struct ptaylor_history[] = {
    "Used to get an error when no bad vols were selected.\n"
 },
 
-{ 26, June , 2018 , PT , "@djunct_select_str.py" , MINOR , TYPE_BUG_FIX,
+{ 26, June , 2018 , PT , "djunct_select_str.py" , MINOR , TYPE_BUG_FIX,
    "Would return an error when *no* bad vols were selected.",
    "Note about fixing it in Jan, 2018; must have forgot to push that ver!\n"
 },
@@ -1092,7 +1092,7 @@ afni_history_struct ptaylor_history[] = {
    "Can now use subbrick selector notation with bvals/bvecs.\n"
 },
 
-{ 12, Jan , 2018 , PT , "@djunct_select_str.py" , MINOR , TYPE_BUG_FIX,
+{ 12, Jan , 2018 , PT , "djunct_select_str.py" , MINOR , TYPE_BUG_FIX,
    "Would return an error when *no* bad vols were selected.",
    "Now updated to work fine with that; just an intermed program.\n"
 },

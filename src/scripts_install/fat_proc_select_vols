@@ -57,7 +57,7 @@ endif
 # default location of viewer: user could modify!
 set my_viewer    = "$adir/@chauffeur_afni"
 set my_selector  = "$adir/@djunct_dwi_selector.tcsh" # [PT: Jun 25, 2018] tcsh
-set my_encoder   = "$adir/@djunct_select_str.py"
+set my_encoder   = "$adir/djunct_select_str.py"
 set my_viewer_4d = "$adir/@djunct_4d_imager"
 
 # ----------------------- set defaults --------------------------
