@@ -22,7 +22,7 @@ VER_DATE  = "Dec 5, 2018"
 # =================================================================
 
 import sys       as sys
-import afni_util as au     # they are gold, indeed!
+from afni_python import afni_util as au     # they are gold, indeed!
 
 THIS_PROG = '@djunct_combine_str.py'
 MIN_NUM_ARGS  = 3                          # three input args needed

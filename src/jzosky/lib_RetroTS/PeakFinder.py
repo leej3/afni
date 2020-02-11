@@ -34,7 +34,7 @@ import glob
 """
 function [r, e] = PeakFinder(var_vector, Opt)
 In python, the above command looks like:
-import PeakFinder as PF
+from afni_python import PeakFinder as PF
 (r, e) = PF.peak_finder(var_vector, **opt)
 where opt is a dictionary with the parameters for the function
 """

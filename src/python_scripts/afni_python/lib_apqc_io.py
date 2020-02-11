@@ -44,9 +44,9 @@ ver = '1.7' ; date = 'Jan 29, 2020'
 # Supplementary stuff and I/O functions for the AP QC tcsh script
 
 import sys, copy
-import lib_afni1D as LAD
-import lib_afni1D as LAD
-import afni_util  as au
+from afni_python import lib_afni1D as LAD
+from afni_python import lib_afni1D as LAD
+from afni_python import afni_util  as au
 
 # -------------------------------------------------------------------
 

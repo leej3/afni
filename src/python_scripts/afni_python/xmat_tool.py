@@ -5,14 +5,14 @@
 # see "xmat_tool.py -help"
 
 import sys
-import ui_xmat as UIX
+from afni_python import ui_xmat as UIX
 
 def main():
    XM = UIX.XmatInterface()
    if not XM: return 1
 
    if XM.use_gui:
-      import gui_xmat
+      from afni_python import gui_xmat
       gui = gui_xmat.XmatGUI()
       if not gui: return 1
 

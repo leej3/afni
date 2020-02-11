@@ -1,7 +1,7 @@
 
 import sys, os, glob
-import lib_apqc_tcsh as lat
-import afni_base as ab
+from afni_python import lib_apqc_tcsh as lat
+from afni_python import afni_base as ab
 
 
 #ver = '1.2'; date = 'June 14, 2019'

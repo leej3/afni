@@ -7,8 +7,8 @@
 # do we want all of the 
 
 import sys, os
-import afni_base as BASE
-import afni_util as UTIL
+from afni_python import afni_base as BASE
+from afni_python import afni_util as UTIL
 
 # whine about execution as a main program
 if __name__ == '__main__':

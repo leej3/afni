@@ -22,8 +22,8 @@ ver = '1.91'; date = 'July 18, 2019'
 import sys 
 import os 
 
-import afni_base as ab
-import lib_msar as lmsar
+from afni_python import afni_base as ab
+from afni_python import lib_msar as lmsar
 
 # =============================================================================
 

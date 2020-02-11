@@ -22,10 +22,10 @@ ver='1.4' ; date='Dec 27, 2019'
 
 import sys, os
 import json
-import afni_base as BASE
-import afni_util as UTIL
+from afni_python import afni_base as BASE
+from afni_python import afni_util as UTIL
 
-import lib_info_dict  as lid
+from afni_python import lib_info_dict  as lid
 
 # ----------------------------------------------------------------------------
 # ----------------------------------------------------------------------------

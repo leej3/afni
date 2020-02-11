@@ -43,8 +43,8 @@ ver='1.2' ; date='Oct 3, 2019'
 ######################################################################
 
 import sys, copy
-import afni_util  as UTIL
-import lib_afni1D as LAD
+from afni_python import afni_util  as UTIL
+from afni_python import lib_afni1D as LAD
 
 # -----------------------------------------------------------------------
 # -----------------------------------------------------------------------

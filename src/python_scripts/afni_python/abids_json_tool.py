@@ -17,7 +17,7 @@
 
 ## system libraries
 import sys, os, glob, subprocess, csv, re, argparse, signal, textwrap, json
-import abids_lib
+from afni_python import abids_lib
 from collections import OrderedDict
 
 # ---------------------------------------------------------------------

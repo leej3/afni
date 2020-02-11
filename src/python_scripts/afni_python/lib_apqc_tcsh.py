@@ -111,10 +111,10 @@ import glob
 import subprocess
 import json
 import collections         as coll
-import afni_base           as ab
-import lib_apqc_html       as lah
-import lib_apqc_html_helps as lahh
-import lib_ss_review       as lssr
+from afni_python import afni_base           as ab
+from afni_python import lib_apqc_html       as lah
+from afni_python import lib_apqc_html_helps as lahh
+from afni_python import lib_ss_review       as lssr
 
 # ----------------------------------------------------------------------
 

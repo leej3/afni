@@ -7,7 +7,7 @@
 ## system libraries
 import sys, os, glob, subprocess, csv, re, argparse, signal, textwrap, json
 from  collections import OrderedDict
-import afni_base
+from afni_python import afni_base
 
 ########################################################################
 ## functions and classes oh my?

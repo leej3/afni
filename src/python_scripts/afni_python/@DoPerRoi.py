@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import os, sys, string
-import afni_base
+from afni_python import afni_base
 from pydoc import help
 
 test = 1

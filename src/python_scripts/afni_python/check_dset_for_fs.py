@@ -7,9 +7,9 @@
 
 import sys, os
 
-import afni_base      as ab
-import afni_util      as UTIL
-import lib_fs         as lf
+from afni_python import afni_base      as ab
+from afni_python import afni_util      as UTIL
+from afni_python import lib_fs         as lf
 
 # =============================================================================
 

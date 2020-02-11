@@ -3,7 +3,7 @@
 # python3 status: compatible
 
 import sys, os
-import option_list, afni_util as UTIL, afni_base as BASE
+from afni_python import option_list, afni_util as UTIL, afni_base as BASE
 
 g_help_string = """
 ===========================================================================

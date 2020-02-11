@@ -11,12 +11,12 @@ import string, sys, os
 from time import asctime
 
 # AFNI modules
-from afni_base import *
-from afni_util import *
-from option_list import *
-from db_mod import *
-import lib_vars_object as VO
-import ask_me
+from afni_python.afni_base import *
+from afni_python.afni_util import *
+from afni_python.option_list import *
+from afni_python.db_mod import *
+from afni_python import lib_vars_object as VO
+from afni_python import ask_me
 
 # ----------------------------------------------------------------------
 # globals
@@ -3152,13 +3152,13 @@ class SubjProcSream:
               htmlstr = '\n' + self.run_html_review(istr='    ')
               # warn user if pythonic does not seem valid
               if self.html_rev_style == 'pythonic':
-                 import module_test_lib as MT
+                 from afni_python import module_test_lib as MT
                  rv = MT.simple_import_test('matplotlib.pyplot', verb=self.verb)
                  if rv: print("** warning: -html_review_style pythonic:" \
                               " missing matplotlib library")
               # or if they could use it, and are not
               else:
-                 import module_test_lib as MT
+                 from afni_python import module_test_lib as MT
                  rv = MT.simple_import_test('matplotlib.pyplot', verb=0)
                  if rv == 0:
                     print("+- consider use of: -html_review_style pythonic")

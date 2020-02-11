@@ -6,9 +6,9 @@
 import sys, os
 
 # AFNI libraries
-import option_list as OL
-import afni_util as UTIL        # not actually used, but probably will be
-import lib_subjects as SUBJ
+from afni_python import option_list as OL
+from afni_python import afni_util as UTIL        # not actually used, but probably will be
+from afni_python import lib_subjects as SUBJ
 
 # ----------------------------------------------------------------------
 # globals

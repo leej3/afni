@@ -4,8 +4,8 @@
 
 import sys, os
 import copy, glob
-import afni_util as UTIL
-import lib_vars_object as VO
+from afni_python import afni_util as UTIL
+from afni_python import lib_vars_object as VO
 
 g_mema_tests = [None, 'paired', 'unpaired']
 g_ttpp_tests = ['-AminusB', '-BminusA']

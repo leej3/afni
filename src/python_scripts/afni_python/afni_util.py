@@ -5,8 +5,8 @@
 # afni_util.py : general utilities for python programs
 
 import sys, os, math
-import afni_base as BASE
-import lib_textdata as TD
+from afni_python import afni_base as BASE
+from afni_python import lib_textdata as TD
 import glob
 import pdb
 import re
@@ -4660,7 +4660,7 @@ def main():
       print(_g_main_help)
       return 0
    if '-module_dir' in argv:
-      import afni_util
+      from afni_python import afni_util
       print('dir(afni_util):\n   %s' % '\n   '.join(dir(afni_util)))
       return 0
    if len(argv) > 2:

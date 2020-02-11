@@ -4,10 +4,10 @@
 
 import sys, os
 
-import afni_base as B
-import afni_util as U
-import lib_afni1D as LD
-import lib_textdata as LT
+from afni_python import afni_base as B
+from afni_python import afni_util as U
+from afni_python import lib_afni1D as LD
+from afni_python import lib_textdata as LT
 
 # init main vars, just to list them
 dset = None

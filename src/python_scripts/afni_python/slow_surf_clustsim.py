@@ -9,11 +9,11 @@ try:    sys.path.extend(['.', '%s/abin' % os.getenv('HOME')])
 except: pass
 
 # AFNI libraries
-import option_list as OPT
-import afni_util as UTIL
-import lib_subjects as SUBJ
-import lib_vars_object as VO
-import lib_surf_clustsim as CLUST
+from afni_python import option_list as OPT
+from afni_python import afni_util as UTIL
+from afni_python import lib_subjects as SUBJ
+from afni_python import lib_vars_object as VO
+from afni_python import lib_surf_clustsim as CLUST
 
 # ----------------------------------------------------------------------
 # globals
