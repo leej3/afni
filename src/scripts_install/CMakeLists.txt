@@ -40,7 +40,10 @@ else()
 
 # Mimic make-builds distribution of all afni python files
 # RetroTS python files
-  install(PROGRAMS ../pkundu/meica.py ../jzosky/RetroTS.py 
+  install(PROGRAMS 
+    ../pkundu/meica.py
+    ../jzosky/RetroTS.py
+    ../roopchansinghv/PsychoPy-NeuroFeedback-Demo/demoExpt.py
           DESTINATION ${AFNI_INSTALL_RUNTIME_DIR}
           PERMISSIONS ${SCRIPT_PERMISSIONS}
   )
@@ -168,20 +171,37 @@ else()
       xmat_tool.py
   )
 
+  # Get a list of python executable scripts
     execute_process(
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src
     COMMAND bash "-c" "make -s -f Makefile.INCLUDE list_py_scripts"
+    OUTPUT_VARIABLE py_scripts
   )
+  string(STRIP ${py_scripts} py_scripts)
+  if("" STREQUAL "${py_scripts}")
+     message(FATAL_ERROR "Could not find py_scripts: ${py_scripts}") 
+  endif()
+  string(REPLACE "\n" ";" py_scripts ${py_scripts})
+  # remove executables not in afni_python
+  list(REMOVE_ITEM py_scripts RetroTS.py demoExpt.py meica.py)
 
-  file(READ ${CMAKE_CURRENT_SOURCE_DIR}/prog_list_bin.txt ALL_PROGRAMS)
-  string(STRIP ${ALL_PROGRAMS} ALL_PROGRAMS)
-  string(REPLACE "\n" " " ALL_PROGRAMS ${ALL_PROGRAMS})
-  separate_arguments(ALL_PROGRAMS)
-  list(TRANSFORM PY_FILES PREPEND
+  # Remove executables from manually assembled list
+  list(REMOVE_ITEM py_files ${py_scripts})
+  
+  # Install python files that are used for imports
+  list(TRANSFORM py_files PREPEND
        "${CMAKE_CURRENT_SOURCE_DIR}/../python_scripts/afni_python/"
   )
+  install(PROGRAMS ${py_files} 
+    DESTINATION ${AFNI_INSTALL_RUNTIME_DIR}/afni_python
+    PERMISSIONS ${SCRIPT_PERMISSIONS}
+    )
 
-  install(PROGRAMS ${PY_FILES} 
+  # Install python executables
+  list(TRANSFORM py_scripts PREPEND
+       "${CMAKE_CURRENT_SOURCE_DIR}/../python_scripts/afni_python/"
+  )
+  install(PROGRAMS ${py_scripts} 
     DESTINATION ${AFNI_INSTALL_RUNTIME_DIR}
     PERMISSIONS ${SCRIPT_PERMISSIONS}
     )
