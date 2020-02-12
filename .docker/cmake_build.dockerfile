@@ -23,7 +23,7 @@ RUN /bin/bash -oc pipefail \
 ninja -v | tee -a verbose_build.log 2>&1
 
 # Install
-RUN DESTDIR=installed ninja install \
+RUN DESTDIR=installed ninja install; \
     cd /opt/src/afni/src/python_scripts && pip install .
 
 
