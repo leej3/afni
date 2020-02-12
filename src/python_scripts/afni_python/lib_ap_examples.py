@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import afni_util as UTIL
+from afni_python import afni_util as UTIL
 import copy
 
 # ----------------------------------------------------------------------
