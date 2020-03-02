@@ -3,8 +3,6 @@ from setuptools import setup
 # Executable scripts obtained from the make target list_py_scripts
 ENTRY_POINTS = {
     "console_scripts": [
-        "1d_tool.py=afni_python.1d_tool:main",
-        "1dplot.py=afni_python.1dplot:main",
         "djunct_calc_mont_dims.py=afni_python.djunct_calc_mont_dims:main",
         "djunct_combine_str.py=afni_python.djunct_combine_str:main",
         "djunct_select_str.py=afni_python.djunct_select_str:main",
@@ -59,9 +57,13 @@ ENTRY_POINTS = {
         "xmat_tool.py=afni_python.xmat_tool:main",
     ]
 }
+SCRIPTS = [
+    "scripts/1d_tool.py",
+    "scripts/1dplot.py",
+]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     setup(
         name="afni_python",
         version="0.0.1",
@@ -73,5 +75,6 @@ if __name__ == '__main__':
         packages=["afni_python"],
         install_requires=["numpy"],
         entry_points=ENTRY_POINTS,
+        scripts=SCRIPTS,
         zip_safe=False,
     )
