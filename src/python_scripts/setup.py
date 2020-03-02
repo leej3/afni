@@ -73,7 +73,7 @@ if __name__ == "__main__":
         author_email="afni.bootcamp@gmail.com",
         license="GPL3",
         packages=["afni_python"],
-        install_requires=["numpy"],
+        install_requires=["numpy", "matplotlib"],
         entry_points=ENTRY_POINTS,
         scripts=SCRIPTS,
         zip_safe=False,
