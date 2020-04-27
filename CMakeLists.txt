@@ -123,9 +123,9 @@ if(NOT TARGET uninstall)
   )
   if(USE_PIP)
   add_custom_target(
-    uninstall_python COMMAND ${Python_EXECUTABLE} -m pip uninstall -y afnipy
+    uninstall_python_package COMMAND ${Python_EXECUTABLE} -m pip uninstall -y afnipy
   )
-  add_dependencies(uninstall uninstall_python)
+  add_dependencies(uninstall uninstall_python_package)
   endif()
 endif()
 
