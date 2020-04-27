@@ -14,7 +14,7 @@ if(USE_OMP)
 endif()
 
 if(COMP_ADD_RSTATS)
-  include(FindLibR)
+    find_package(LibR REQUIRED)
 endif()
 
 # set(Python_FIND_VIRTUALENV FIRST)
