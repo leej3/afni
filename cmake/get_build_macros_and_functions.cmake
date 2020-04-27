@@ -124,9 +124,9 @@ function(assemble_target_list PROGRAMS_BUILT SHOW_UNBUILT_PROGS)
   get_expected_target_list("${CMPNT_MAPPING}" expected_targets)
 
   # Get list of installed targets from this project build...
-  get_property(installed_targets GLOBAL PROPERTY INSTALLED_PROGS)
-  # message("Installed:${installed_targets}")
-  list(REMOVE_ITEM expected_targets ${installed_targets})
+  get_property(afni_installed_targets GLOBAL PROPERTY INSTALLED_PROGS)
+  # message("Installed:${afni_installed_targets}")
+  list(REMOVE_ITEM expected_targets ${afni_installed_targets})
   if(NOT "${expected_targets}" STREQUAL "")
     message(FATAL_ERROR "The build has not built all the targets expected. It is\
      missing the following targets:${expected_targets}!!!!")
@@ -148,12 +148,12 @@ function(assemble_target_list PROGRAMS_BUILT SHOW_UNBUILT_PROGS)
 
 
   # Compute targets not present in the make build
-  set(CMAKE_LESS_MAKE_BUILT ${installed_targets})
+  set(CMAKE_LESS_MAKE_BUILT ${afni_installed_targets})
   list(REMOVE_ITEM CMAKE_LESS_MAKE_BUILT ${make_targ_list})
 
   # Compute targets only in the make build
   set(MAKE_BUILD_LESS_CMAKE ${make_targ_list})
-  list(REMOVE_ITEM MAKE_BUILD_LESS_CMAKE ${installed_targets})
+  list(REMOVE_ITEM MAKE_BUILD_LESS_CMAKE ${afni_installed_targets})
 
 
   # Provide feedback on difference between the builds
