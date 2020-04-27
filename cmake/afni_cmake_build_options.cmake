@@ -118,10 +118,10 @@ if(DEFINED USE_SYSTEM_ALL)
   # a list of libraries that shouldn't be counted in ALL
   set(SLIGHTLY_BROKEN "GLW;F2C;NETCDF;VOLPACK")
   
-  foreach(OPTIONAL_LIB GLW NETCDF GIFTI GTS DCMNIIX VOLPACK F2C GLUT XMHTML)
-    if("${OPTIONAL_LIB}" IN_LIST SLIGHTLY_BROKEN)
-      continue()
-    endif()
+  foreach(OPTIONAL_LIB GLW NETCDF GIFTI NIFTI GTS DCMNIIX VOLPACK F2C GLUT XMHTML)
+      #    if("${OPTIONAL_LIB}" IN_LIST SLIGHTLY_BROKEN)
+      #      continue()
+      #    endif()
 
     message("Setting ${OPTIONAL_LIB} to ${USE_SYSTEM_ALL} because USE_SYSTEM_ALL is defined")
     set(USE_SYSTEM_${OPTIONAL_LIB} ${USE_SYSTEM_ALL})
