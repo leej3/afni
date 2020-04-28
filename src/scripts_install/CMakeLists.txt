@@ -34,6 +34,52 @@ install(
 )
 endif()
 
+
+
+# file(
+#   GENERATE 
+#   OUTPUT ${CMAKE_BINARY_DIR}/fetch_atlases.sh
+#   CONTENT "\
+#     \n${DATALAD} install https://afni.nimh.nih.gov/pub/dist/data/afni_data\
+#     \ncd ${CMAKE_BINARY_DIR}/afni_data\
+#     \n${DATALAD} get .\
+#     \n${DATALAD} unlock .\
+#   "
+#   )
+  add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/.python_install_required 
+    COMMAND echo Checking whether python is installed
+    COMMAND if true;then echo hello;fi
+    USES_TERMINAL
+    )
+# add_custom_target(
+#   pytest
+#   DEPENDS test_setup check_afnipy_installed
+#   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/afni_tests"
+#   COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}
+#   COMMAND echo Running tests with modified path to use build binaries and scripts in the source tree...
+#   COMMAND echo Prepending ${TESTING_PATHS}
+#   COMMAND echo When using 'ninja pytest' one can define "ARGS" to pass additional arguments to pytest...
+#   COMMAND ${CMAKE_COMMAND} -E env PATH=${PATH_FOR_TESTING}  ${Python_EXECUTABLE} -B -m pytest $$ARGS
+#   USES_TERMINAL
+# )
+
+  #   add_custom_target(
+  #     atlases_dir 
+  #     ALL
+  #     VERBATIM
+  #     COMMAND echo Data for distribution has been downloaded (ADD_ATLASES has been set to ON)
+  #     DEPENDS ${CMAKE_BINARY_DIR}/afni_data 
+  #     )
+
+  # install(
+  #   DIRECTORY ${CMAKE_BINARY_DIR}/afni_data/atlases/
+  #   COMPONENT atlases
+  #   DESTINATION ${AFNI_INSTALL_ATLAS_DIR}
+  #   PATTERN '*'
+  #   PERMISSIONS "WORLD_READ"
+  # )
+
 if(COMP_ADD_PYTHON)
   if(USE_PIP)
     # A pip installation is required to run the tests since they import from

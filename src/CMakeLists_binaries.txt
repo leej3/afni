@@ -239,8 +239,7 @@ foreach(
 )
 
   add_afni_executable(${target} ${target}.c)
-  target_include_directories(${target} PRIVATE NIFTI::nifti2)
-  target_link_libraries(${target} PRIVATE AFNI::mri NIFTI::nifti2 m)
+  target_link_libraries(${target} PRIVATE AFNI::mri NIFTI::nifti2 NIFTI::nifticdf m)
 endforeach(target)
 
 
@@ -410,7 +409,7 @@ foreach(mod PRF;PRF_6;PRF_6_BAD)
   set_target_properties(
     ${target} PROPERTIES PRIVATE_HEADER model_conv_${mod}.c
   )
-  target_link_libraries(${target} PRIVATE AFNI::mri)
+  target_link_libraries(${target} PRIVATE AFNI::mri NIFTI::nifticdf)
 endforeach()
 
 # 3dTSgem won't be built

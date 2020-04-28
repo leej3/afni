@@ -32,7 +32,7 @@ else()
     set(USE_SYSTEM_GLW OFF)
 endif()
 
-if(NOT USE_SYSTEM_NETCDF)
+if(DEFINED USE_SYSTEM_NETCDF AND NOT USE_SYSTEM_NETCDF)
     message(WARNING "Building netcdf is not advised due to the large number of required
     dependencies. Consider using a system installation of netcdf provided by your
     favorite package manager (e.g. on Ubuntu: 'apt install libnetcdf-dev'")
