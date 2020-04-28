@@ -52,9 +52,10 @@ cmake_dependent_option(
   "NOT COMP_CORELIBS_ONLY;COMP_ADD_BINARIES" OFF
 )
 mark_as_advanced(COMP_ADD_PYTHON)
+set_if_not_defined(USE_PIP ON)
 
 cmake_dependent_option(
-  COMP_ADD_RSTATS "Includes scripts and libraries only used for statistics in R." ON 
+    COMP_ADD_RSTATS "Includes scripts and libraries only used for statistics in R." OFF 
   "NOT COMP_CORELIBS_ONLY;" OFF
 )
 mark_as_advanced(COMP_ADD_RSTATS)
@@ -95,7 +96,7 @@ option(USE_OMP "Use OpenMP to enamble <omp.h>" ON)
 option(USE_CPACK "CPack can be used to generate source and binary distributions" OFF)
 option(ENABLE_TESTS "Enable tests" OFF)
 option(RUN_PLUGIN_CHECK "Check that plugins build without any missing symbols" OFF)
-
+set_if_not_defined(FETCHCONTENT_QUIET ON CACHE BOOL "Quietly fetch")
 
 # Defining "external" dependencies i.e. anything that can be installed as a
 # system install. This list will also include all directories added with the

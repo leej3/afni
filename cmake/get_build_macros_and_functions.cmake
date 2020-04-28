@@ -300,7 +300,7 @@ function(add_afni_plugin target_in)
 )
   add_library(${ARGV})
   add_afni_target_properties(${target_in})
-  if(ADD_PLUGIN_CHECK)
+  if(RUN_PLUGIN_CHECK)
       add_library(checking_${target_in} $<TARGET_PROPERTY:${target_in},SOURCES>)
       target_link_libraries(
           checking_${target_in}

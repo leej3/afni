@@ -138,11 +138,11 @@ if(USE_SYSTEM_NIFTI)
   find_package(NIFTI REQUIRED)
 else()
 FetchContent_Declare(
-  fetch_nifti_clib_git_repo   
+  nifti_clib   
   GIT_REPOSITORY https://github.com/NIFTI-Imaging/nifti_clib.git 
   GIT_TAG 9563fa4ae56140d8d3d268688ff2386bf2daf2c8
   )
-FetchContent_MakeAvailable(fetch_nifti_clib_git_repo)
+FetchContent_MakeAvailable(nifti_clib)
 endif()
 
 if(USE_SYSTEM_GIFTI)

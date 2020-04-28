@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.14.7 FATAL_ERROR)
 
 # ##### Set policies
+cmake_policy(SET CMP0077 NEW)
 cmake_policy(SET CMP0048 NEW)
-
 # ##### Set module path and import some macros
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(get_git_repo_version)
@@ -11,7 +11,7 @@ include(CMakeDependentOption)
 include(afni_cmake_build_options)
 
 if(NOT DEFINED CMAKE_C_COMPILER)
-  set(CMAKE_C_COMPILER "gcc")
+  set_if_not_defined(CMAKE_C_COMPILER "gcc")
 endif()
 # ##### Project info
 project(
@@ -46,16 +46,16 @@ set_if_not_defined(AFNI_INSTALL_LIBRARY_DIR "${INSTALL_PREFIX}/lib")
 set_if_not_defined(AFNI_INSTALL_RUNTIME_DIR "${INSTALL_PREFIX}/bin")
 set_if_not_defined(AFNI_INSTALL_INCLUDE_DIR "${INSTALL_PREFIX}/include")
 
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src/targets)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src/targets)
+set_if_not_defined(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src/targets)
+set_if_not_defined(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src/targets)
 if(CONDA_BUILD)
   get_filename_component(AFNI_INSTALL_LIBRARY_DIR ${AFNI_INSTALL_LIBRARY_DIR} DIRECTORY)
   get_filename_component(AFNI_INSTALL_INCLUDE_DIR ${AFNI_INSTALL_INCLUDE_DIR} DIRECTORY)
 endif()
 
 # Other possible directories to set
-set(AFNI_INSTALL_ATLAS_DIR "${INSTALL_PREFIX}/atlases")
-set(AFNI_INSTALL_PICS_DIR "${INSTALL_PREFIX}/funstuff")
+set_if_not_defined(AFNI_INSTALL_ATLAS_DIR "${INSTALL_PREFIX}/atlases")
+set_if_not_defined(AFNI_INSTALL_PICS_DIR "${INSTALL_PREFIX}/funstuff")
 
 # Get mapping between each target name and it's installation component
 set(COMPONENTS_MAPFILE ${CMAKE_CURRENT_SOURCE_DIR}/packaging/installation_components.txt )
@@ -178,4 +178,3 @@ if(USE_CPACK)
   endif()
 endif()
 
-unset(USE_SYSTEM_ALL CACHE)
