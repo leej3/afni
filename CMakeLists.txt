@@ -121,7 +121,7 @@ if(NOT TARGET uninstall)
     uninstall COMMAND ${CMAKE_COMMAND} -P
                       ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
   )
-  if(USE_PIP)
+  if(STANDARD_PYTHON_INSTALL)
   add_custom_target(
     uninstall_python_package COMMAND ${Python_EXECUTABLE} -m pip uninstall -y afnipy
   )

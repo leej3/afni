@@ -36,17 +36,28 @@ endif()
 
 
 
-# file(
-#   GENERATE 
-#   OUTPUT ${CMAKE_BINARY_DIR}/fetch_atlases.sh
-#   CONTENT "\
-#     \n${DATALAD} install https://afni.nimh.nih.gov/pub/dist/data/afni_data\
-#     \ncd ${CMAKE_BINARY_DIR}/afni_data\
-#     \n${DATALAD} get .\
-#     \n${DATALAD} unlock .\
-#   "
-#   )
-  add_custom_command(
+file(
+    GENERATE 
+    OUTPUT ${CMAKE_BINARY_DIR}/make_sure_afnipy_installed.sh
+    CONTENT "\
+    \nif [ $# -lt 1 ]
+    \n then
+    \n     export py_interp=$(which python)
+    \n else
+    \n     export py_interp=$1
+    \nfi
+    \nif [ ! -f setup.py ]; 
+    \nthen
+    \n    echo This script should be run from the python_scripts directory
+    \n    exit 1
+    \nfi
+    \nif [ ! $py_interp -c \"import afnipy\" ];
+    \nthen
+    \n    $py_interp setup.py develop
+    \nfi
+    "
+    )
+add_custom_command(
     OUTPUT ${CMAKE_BINARY_DIR}/.python_install_required 
     COMMAND echo Checking whether python is installed
     COMMAND if true;then echo hello;fi
@@ -66,7 +77,7 @@ endif()
 
   #   add_custom_target(
   #     atlases_dir 
-  #     ALL
+  #     ALL:
   #     VERBATIM
   #     COMMAND echo Data for distribution has been downloaded (ADD_ATLASES has been set to ON)
   #     DEPENDS ${CMAKE_BINARY_DIR}/afni_data 
@@ -80,21 +91,29 @@ endif()
   #   PERMISSIONS "WORLD_READ"
   # )
 
-if(COMP_ADD_PYTHON)
-  if(USE_PIP)
-    # A pip installation is required to run the tests since they import from
-    # afnipy. Using pip to install AFNI's python code has the advantage that
-    # the code is installed into a specific python interpretter/environment.
-    # This is useful in certain situations. To install the python components
-    # of AFNI's installation using pip, execute the following command from the
-    # src/python_scripts directory of the AFNI codebase: pip install ."
-    add_custom_target(install_afnipy
-      ALL
-      COMMAND ${Python_EXECUTABLE} -m pip install  ${CMAKE_CURRENT_SOURCE_DIR}/../python_scripts
-      )
+if(COMP_ADD_PYTHON) 
+    if(STANDARD_PYTHON_INSTALL)
+    # A standard installation of the python code is required to run the tests.
+    # Using pip (or just setuptools) to install AFNI's python code has the
+    # advantage that the code is installed into a specific python
+    # interpretter/environment.  This is useful in many situations. To install
+    # the python components of AFNI's installation using pip, execute the
+    # following command from the src/python_scripts directory of the AFNI
+    # codebase: 'pip install .', or 'python setup.py install'" The default
+    # behavior of the cmake build is to install the package in development mode
+    # during the build and to install into the python interpretters site
+    # packages during and install.
+    add_custom_target(install_afnipy COMMAND ${Python_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../python_scripts/setup.py develop)
 
   else()
-    install(
+      # An alternative to installing using the current python interpretter is
+      # to install the python files to abin. This has the advantage that they
+      # are always available for use. The downside is that the installation
+      # cannot be associated with a particular environment and so if the user
+      # changes their python environment AFNI's python code may be available
+      # but the pytho:n dependencies may not be.
+      install(
         DIRECTORY ../python_scripts/scripts/
         COMPONENT python
         DESTINATION ${AFNI_INSTALL_RUNTIME_DIR}
@@ -110,8 +129,9 @@ if(COMP_ADD_PYTHON)
           PATTERN "*.pyc" EXCLUDE
         )
   endif()
-# Mimic make-builds distribution of all afni python files
-# RetroTS python files
+
+  # Mimic make-builds distribution of all afni python files
+  # RetroTS python files
   install(PROGRAMS
      ../pkundu/meica.py
      ../jzosky/RetroTS.py
