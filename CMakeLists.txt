@@ -40,11 +40,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 #   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DREAD_WRITE_64 -DLINUX -DDARWIN")
 # endif()
 
-set_if_not_defined(INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
-set_if_not_defined(AFNI_INSTALL_LIBRARY_DIR "${INSTALL_PREFIX}/lib")
-set_if_not_defined(AFNI_INSTALL_RUNTIME_DIR "${INSTALL_PREFIX}/bin")
-set_if_not_defined(AFNI_INSTALL_INCLUDE_DIR "${INSTALL_PREFIX}/include")
+set_if_not_defined(AFNI_INSTALL_LIBRARY_DIR lib)
+set_if_not_defined(AFNI_INSTALL_RUNTIME_DIR bin)
+set_if_not_defined(AFNI_INSTALL_INCLUDE_DIR include)
 
 set_if_not_defined(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src/targets)
 set_if_not_defined(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src/targets)
@@ -53,9 +52,24 @@ if(CONDA_BUILD)
   get_filename_component(AFNI_INSTALL_INCLUDE_DIR ${AFNI_INSTALL_INCLUDE_DIR} DIRECTORY)
 endif()
 
+# Add a default attempt at setting the run path correctly for binaries
+if(NOT CMAKE_SKIP_INSTALL_RPATH)
+  file(
+    RELATIVE_PATH
+    relDir
+    ${CMAKE_INSTALL_PREFIX}/${AFNI_INSTALL_RUNTIME_DIR}
+    ${CMAKE_INSTALL_PREFIX}/${AFNI_INSTALL_LIBRARY_DIR}
+  )
+  if(APPLE)
+    set_if_not_defined(CMAKE_INSTALL_RPATH  "@loader_path/${relDir}")
+  else()
+    set_if_not_defined(CMAKE_INSTALL_RPATH   "\$ORIGIN/${relDir}")
+  endif()
+endif()
+
 # Other possible directories to set
-set_if_not_defined(AFNI_INSTALL_ATLAS_DIR "${INSTALL_PREFIX}/atlases")
-set_if_not_defined(AFNI_INSTALL_PICS_DIR "${INSTALL_PREFIX}/funstuff")
+set_if_not_defined(AFNI_INSTALL_ATLAS_DIR atlases)
+set_if_not_defined(AFNI_INSTALL_PICS_DIR funstuff)
 
 # Get mapping between each target name and it's installation component
 set(COMPONENTS_MAPFILE ${CMAKE_CURRENT_SOURCE_DIR}/packaging/installation_components.txt )

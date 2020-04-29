@@ -195,38 +195,6 @@ function(quotize input basename)
   )
 endfunction(quotize)
 
-macro(get_afni_rpath)
-  # Needed for correct linking when installing. see
-  # https://gitlab.kitware.com/cmake/community/wikis/doc/cmake/RPATH-handling
-  # get_property(_nifti TARGET NIFTI::niftiio PROPERTY LOCATION)
-  # get_filename_component(_nifti_libraries ${_nifti} DIRECTORY) get_property(_gifti
-  # TARGET GIFTI::giftiio PROPERTY LOCATION) get_filename_component(_gifti_libraries
-  # ${_gifti} DIRECTORY)
-  if(TARGET_TYPE MATCHES "LIBRARY")
-    set(INSTALL_PATH ${AFNI_INSTALL_LIBRARY_DIR})
-  else()
-    set(INSTALL_PATH ${AFNI_INSTALL_RUNTIME_DIR})
-  endif()
-  # Prepare RPATH
-  file(RELATIVE_PATH _rel_afni ${INSTALL_PATH} ${AFNI_INSTALL_LIBRARY_DIR})
-  # file(RELATIVE_PATH _rel_nifti ${INSTALL_PATH} ${_nifti_libraries})
-  # file(RELATIVE_PATH _rel_gifti ${INSTALL_PATH} ${_gifti_libraries})
-  if(APPLE)
-    set(afni_target_RPATH
-        "@loader_path/${_rel_afni}"
-
-        # "@loader_path/${_rel_nifti}" "@loader_path/${_rel_gifti}"
-    )
-  else()
-    set(afni_target_RPATH
-        "\$ORIGIN/${_rel_afni}"
-        # "\$ORIGIN/${_rel_nifti}" "\$ORIGIN/${_rel_gifti}"
-    )
-  endif()
-  # file(TO_NATIVE_PATH "${_rpath}" afni_target_RPATH)
-  # message(FATAL_ERROR "${afni_target_RPATH}----- ${AFNI_INSTALL_LIBRARY_DIR}--- ${_rel_afni}------${INSTALL_PATH} -------${TARGET_TYPE}")
-endmacro()
-
 function(get_component_name component cmpnt_mapping targ_in)
   set(${component} "not found" PARENT_SCOPE)
   # Escape "+" character for regex
@@ -319,32 +287,11 @@ endfunction()
 function(add_afni_target_properties target)
   # this macro sets some default properties for targets in this project
   get_target_property(TARGET_TYPE ${target} TYPE)
-  get_afni_rpath()
   if(NOT (GENERATE_PACKAGING_COMPONENTS))
     get_component_name(component "${CMPNT_MAPPING}" ${target})
   endif()
   log_target_as_installed(${target})
   # message("${target} -------${component}")
-  
-  # Set the target properties
-  if(NOT DEFINED ENV{CONDA_BUILD})
-    set_target_properties(
-      ${target}
-      PROPERTIES SKIP_BUILD_RPATH
-                 OFF
-                 BUILD_WITH_INSTALL_RPATH
-                 OFF
-                 INSTALL_RPATH
-                 "${afni_target_RPATH}"
-                 INSTALL_RPATH_USE_LINK_PATH
-                 ON
-    )
-  endif()
-  set_target_properties(${target} PROPERTIES MACOSX_RPATH ON)
-
-  if(CONDA_BUILD)
-    set_target_properties(${target} PROPERTIES INSTALL_RPATH "${afni_target_RPATH}")
-  endif()
 
   install(
     TARGETS ${target}
