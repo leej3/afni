@@ -1,5 +1,5 @@
 import sys
-from setuptools import setup
+from setuptools import setup, find_packages
 from distutils.version import LooseVersion
 py_ver = '.'.join(str(n) for n in sys.version_info[:3])
 if LooseVersion(py_ver) < LooseVersion("3.6"):
@@ -17,7 +17,7 @@ setup(name='afnipy',
       author='AFNI team',
       author_email='afni.bootcamp@gmail.com',
       license='Public Domain',
-      packages=['afnipy'],
+      packages= find_packages(),
       install_requires=["numpy", "matplotlib"],
       scripts=SCRIPTS,
       zip_safe=False)
