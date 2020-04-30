@@ -17,9 +17,23 @@ if(COMP_ADD_RSTATS)
     find_package(LibR REQUIRED)
 endif()
 
-# set(Python_FIND_VIRTUALENV FIRST)
+# The python interpreter used for the build (and subsequent testing if
+# FORCE_CURRENT_PY_INTERP_FOR_TESTS is not set) is the first one found that
+# satisfies the version requirements. The PATH variable is used for this, and
+# OSX framework python is found last. For more details see:
+# https://cmake.org/cmake/help/git-stage/module/FindPython.html
 set(CMAKE_FIND_FRAMEWORK LAST)
-find_package(Python 3 REQUIRED COMPONENTS Interpreter)
+set(Python_FIND_VIRTUALENV STANDARD)
+set(Python_FIND_STRATEGY LOCATION)
+
+# Unless overwritten, python > 3.6 is required
+set_if_not_defined(USE_PYTHON_INTERPRETER_SUPPORTED_FOR_TESTS ON)
+if(USE_PYTHON_INTERPRETER_SUPPORTED_FOR_TESTS)
+  set(PY_VER 3.6)
+else()
+  set(PY_VER 3)
+endif()
+find_package(Python ${PY_VER} REQUIRED COMPONENTS Interpreter)
 if(NOT ${Python_FOUND})
   message(FATAL_ERROR "Cannot find python interpreter (FOUND: ${Python_EXECUTABLE})")
 endif()

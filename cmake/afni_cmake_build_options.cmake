@@ -97,6 +97,7 @@ option(USE_CPACK "CPack can be used to generate source and binary distributions"
 option(ENABLE_TESTS "Enable tests" OFF)
 option(RUN_PLUGIN_CHECK "Check that plugins build without any missing symbols" OFF)
 set_if_not_defined(FETCHCONTENT_QUIET ON CACHE BOOL "Quietly fetch")
+set_if_not_defined(STANDARD_PYTHON_INSTALL ON)
 
 # Defining "external" dependencies i.e. anything that can be installed as a
 # system install. This list will also include all directories added with the

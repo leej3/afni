@@ -124,7 +124,6 @@ write_basic_package_version_file(
 )
 
 # Allow an uninstall (with some risk of messiness)
-
 if(NOT TARGET uninstall)
   configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
@@ -142,48 +141,6 @@ if(NOT TARGET uninstall)
   add_dependencies(uninstall uninstall_python_package)
   endif()
 endif()
-
-
-# Setup for tests. Things like, clear some cache dirs, and check the tests
-# from the source tree are symlinked into the build tree.
-add_custom_target(
-  test_setup
-  COMMAND 
-  ${CMAKE_COMMAND} 
-  -D TESTS_PATH=${CMAKE_CURRENT_SOURCE_DIR}/tests
-  -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/setup_for_tests.cmake
-  )
-
-
-# Define PATH modification required for within build tree tests execution
-set(COMP_ADD_BINARIES ${CMAKE_CURRENT_BINARY_DIR}/src/targets)
-set(T_SCRIPTS ${CMAKE_CURRENT_SOURCE_DIR}/src/scripts_install)
-set(R_SCRIPTS ${CMAKE_CURRENT_SOURCE_DIR}/src/R_scripts)
-set(J_SCRIPTS ${CMAKE_CURRENT_SOURCE_DIR}/src/jzosky)
-set(J_SCRIPTS "${J_SCRIPTS}:${J_SCRIPTS}/lib_RetroTS")
-set(TESTING_PATHS "${COMP_ADD_BINARIES}:${T_SCRIPTS}:${R_SCRIPTS}:${J_SCRIPTS}")
-set(PATH_FOR_TESTING "${TESTING_PATHS}:$ENV{PATH}")
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/TESTING_PATHS.txt ${TESTING_PATHS})
-
-
-# Make sure the python code is installed:
-add_custom_target(check_afnipy_installed
-                  COMMAND ${Python_EXECUTABLE} -c 'from afnipy import afni_base')
-
-# Create test target for running tests within the build tree
-add_custom_target(
-  pytest
-  DEPENDS test_setup check_afnipy_installed
-  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/afni_tests"
-  COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}
-  COMMAND echo Running tests with modified path to use build binaries and scripts in the source tree...
-  COMMAND echo Prepending ${TESTING_PATHS}
-  COMMAND echo When using 'ninja pytest' one can define "ARGS" to pass additional arguments to pytest...
-  COMMAND ${CMAKE_COMMAND} -E env PATH=${PATH_FOR_TESTING}  ${Python_EXECUTABLE} -B -m pytest $$ARGS
-  USES_TERMINAL
-)
-
-
 
 # Generate packaging if this is the top level project
 if(USE_CPACK)
