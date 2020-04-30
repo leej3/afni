@@ -1,9 +1,12 @@
 import sys
 from setuptools import setup, find_packages
 from distutils.version import LooseVersion
-py_ver = '.'.join(str(n) for n in sys.version_info[:3])
-if LooseVersion(py_ver) < LooseVersion("3.6"):
-    err = "The current interpretter {} ({}) is not supported.".format(sys.executable,py_ver)
+
+# Do not attempt to install when using an unsupported python
+PY_VER = '.'.join(str(n) for n in sys.version_info[:3])
+MIN_PY_VER = "3.6"
+if LooseVersion(PY_VER) < LooseVersion(MIN_PY_VER):
+    err = "The current interpretter {} ({}) is not supported.".format(sys.executable,PY_VER)
     raise EnvironmentError(err)
 
 
