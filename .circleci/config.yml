@@ -423,7 +423,10 @@ workflows:
               build_type: ["cmake_build"]
               # cache version should match for all jobs
               image_cache_version: ["0"]
-      - build:
+          filters:
+            tags:
+              only: /.*/
+       - build:
           name: make_build
           requires:
             - test_cmake_build
@@ -432,7 +435,10 @@ workflows:
               build_type: ["make_build"]
               # cache version should match for all jobs
               image_cache_version: ["0"]
-      - test:
+          filters:
+            tags:
+              only: /.*/
+       - test:
           name: test_<< matrix.build_type >>
           matrix:
             parameters:
