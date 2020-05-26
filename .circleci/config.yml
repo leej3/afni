@@ -460,7 +460,5 @@ workflows:
             - macos_build
             - containers_check
           filters:
-            branches:
-              ignore: /.*/
             tags:
-              only: /^AFNI_.*/
+              only: /AFNI_.*/
