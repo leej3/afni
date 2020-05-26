@@ -417,7 +417,7 @@ workflows:
             tags:
               only: /.*/
             branches:
-              ignore: /.*/
+              only: /.*/
       - build:
           name: cmake_build
           matrix:
@@ -429,7 +429,7 @@ workflows:
             tags:
               only: /.*/
             branches:
-              ignore: /.*/
+              only: /.*/
       - build:
           name: make_build
           requires:
@@ -443,7 +443,7 @@ workflows:
             tags:
               only: /.*/
             branches:
-              ignore: /.*/
+              only: /.*/
       - test:
           name: test_<< matrix.build_type >>
           matrix:
@@ -458,7 +458,7 @@ workflows:
             tags:
               only: /.*/
             branches:
-              ignore: /.*/
+              only: /.*/
       - containers_check:
           name: check containers for issues with users and permissions and environments
           matrix:
@@ -472,7 +472,7 @@ workflows:
             tags:
               only: /.*/
             branches:
-              ignore: /.*/
+              only: /.*/
       - deploy:
           name: deploy_<< matrix.build_type >>
           matrix:
@@ -488,5 +488,5 @@ workflows:
             tags:
               only: /AFNI_\d\d\.\d\.\d\d/
             branches:
-              ignore: /.*/
+              only: /.*/
 
