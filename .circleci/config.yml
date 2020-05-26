@@ -486,5 +486,5 @@ workflows:
             - containers_check
           filters:
             tags:
-              only: /.*/
+              only: /AFNI_.*/
 
