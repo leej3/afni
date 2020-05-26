@@ -470,5 +470,4 @@ workflows:
             - containers_check
           filters:
             tags:
-              only: /AFNI_.*/
-
+              only: /AFNI_\d\d\.\d\.\d\d/
