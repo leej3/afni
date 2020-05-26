@@ -416,6 +416,8 @@ workflows:
           filters:
             tags:
               only: /.*/
+            branches:
+              only: /.*/
       - build:
           name: cmake_build
           matrix:
@@ -425,6 +427,8 @@ workflows:
               image_cache_version: ["0"]
           filters:
             tags:
+              only: /.*/
+            branches:
               only: /.*/
       - build:
           name: make_build
@@ -437,6 +441,8 @@ workflows:
               image_cache_version: ["0"]
           filters:
             tags:
+              only: /.*/
+            branches:
               only: /.*/
       - test:
           name: test_<< matrix.build_type >>
@@ -451,6 +457,8 @@ workflows:
           filters:
             tags:
               only: /.*/
+            branches:
+              only: /.*/
       - containers_check:
           name: check containers for issues with users and permissions and environments
           matrix:
@@ -462,6 +470,8 @@ workflows:
             - cmake_build
           filters:
             tags:
+              only: /.*/
+            branches:
               only: /.*/
       - deploy:
           name: deploy_<< matrix.build_type >>
@@ -477,4 +487,6 @@ workflows:
           filters:
             tags:
               only: /AFNI_\d\d.\d.\d\d/
+            branches:
+              ignore: /.*/
 
