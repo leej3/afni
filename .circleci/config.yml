@@ -413,6 +413,9 @@ workflows:
       - macos_build:
           requires:
             - test_cmake_build
+          filters:
+            tags:
+              only: /.*/
       - build:
           name: cmake_build
           matrix:
@@ -439,6 +442,9 @@ workflows:
               test_data_cache_version: ["5"]
           requires:
             - << matrix.build_type >>
+          filters:
+            tags:
+              only: /.*/
       - containers_check:
           name: check containers for issues with users and permissions and environments
           matrix:
@@ -448,6 +454,9 @@ workflows:
           requires:
             - make_build
             - cmake_build
+          filters:
+            tags:
+              only: /.*/
       - deploy:
           name: deploy_<< matrix.build_type >>
           matrix:
@@ -461,5 +470,5 @@ workflows:
             - containers_check
           filters:
             tags:
-              only: /AFNI_\d\d\.\d\.\d\d/
+              only: /AFNI_.*/
 
