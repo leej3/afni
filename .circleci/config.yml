@@ -487,4 +487,6 @@ workflows:
           filters:
             tags:
               only: /AFNI_\d\d/\d/\d\d/
+            branches:
+              ignore: /.*/
 
