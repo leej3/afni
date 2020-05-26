@@ -426,7 +426,7 @@ workflows:
           filters:
             tags:
               only: /.*/
-       - build:
+      - build:
           name: make_build
           requires:
             - test_cmake_build
@@ -438,7 +438,7 @@ workflows:
           filters:
             tags:
               only: /.*/
-       - test:
+      - test:
           name: test_<< matrix.build_type >>
           matrix:
             parameters:
