@@ -31,16 +31,19 @@ requirements:
     - {{ compiler('c') }}
     - cmake >=3.13
     - ninja
-    - {{ cdt('mesa-libglw-devel') }}
-    - {{ cdt('mesa-libgl-devel') }}
-    - {{ cdt('libx11-devel') }}
-    - {{ cdt('libxt-devel') }} 
-    - {{ cdt('libxext') }}
-    - {{ cdt('libxmu') }} # [linux]
-    - {{ cdt('libxpm') }} # [linux]
-    - {{ cdt('libxi') }}
-    - {{ cdt('libxft') }}
-    - {{ cdt('libxcb') }}
+    - pkg-config
+    - {{ cdt('mesa-libgl-devel') }}  # [linux]
+    - {{ cdt('mesa-dri-drivers') }}  # [linux]
+    - {{ cdt('libselinux') }}  # [linux]
+    - {{ cdt('libxdamage') }}  # [linux]
+    - {{ cdt('libxxf86vm') }}  # [linux]
+    - llvm-openmp  # [osx]
+    - libgomp      # [linux]
+
+
+
+
+
   host:
     - python
     - libpng 1.6*
@@ -50,11 +53,21 @@ requirements:
     - openmp
     - freetype
     - libglu # [linux]
+    - freeglut
     - expat
     - gsl
-    - openmotif
     - openmotif-dev
-    - glib 2.56*
+    - glib
+    - xorg-libxpm # [linux]
+    - xorg-libxmu # [linux]
+    - xorg-libxi # [linux]
+    - xorg-libx11
+    - xorg-libxt 
+    - xorg-libxft
+    - xorg-libxcb
+    - xorg-libxfixes  # [linux]
+    - xorg-libxext
+    - mesa
     # - r
     # - r-rmpi
     # - r-afex
@@ -65,24 +78,11 @@ requirements:
     # - r-paran
     # - r-psych
     # - r-brms
-    - nifti_clib
-    - gifti_clib
+    #- nifti_clib
+    #- gifti_clib
     - libnetcdf
 
   run:
-    - python
-    - libpng 1.6*
-    - jpeg
-    - zlib
-    - openssl
-    - openmp
-    - freetype
-    - mesalib
-    - libglu # [linux]
-    - expat
-    - gsl
-    - openmotif
-    - glib 2.56*
     # - r
     # - r-rmpi
     # - r-afex
@@ -93,9 +93,6 @@ requirements:
     # - r-paran
     # - r-psych
     # - r-brms
-    - nifti_clib
-    - gifti_clib
-    - libnetcdf  
     - tcsh  
 
 test:
