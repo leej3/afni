@@ -46,28 +46,27 @@ requirements:
 
   host:
     - python
-    - libpng 1.6*
+    - libpng 1.6
     - jpeg
     - zlib
     - openssl
-    - openmp
     - freetype
     - libglu # [linux]
-    - freeglut
+    - freeglut # [linux]
     - expat
     - gsl
-    - openmotif-dev
+    - openmotif-dev # [linux]
     - glib
     - xorg-libxpm # [linux]
     - xorg-libxmu # [linux]
     - xorg-libxi # [linux]
-    - xorg-libx11
-    - xorg-libxt 
-    - xorg-libxft
-    - xorg-libxcb
+    - xorg-libx11 # [linux]
+    - xorg-libxt # [linux]
+    - xorg-libxft # [linux]
+    - xorg-libxcb # [linux]
     - xorg-libxfixes  # [linux]
-    - xorg-libxext
-    - mesa
+    - xorg-libxext # [linux]
+    - mesalib # [linux]
     # - r
     # - r-rmpi
     # - r-afex
