@@ -22,7 +22,9 @@ build:
   # skip: True # [py3k]
 
   missing_dso_whitelist:                                         # [osx]
-    - /System/Library/Frameworks/GLUT.framework/Versions/A/GLUT  # [osx]
+    - /usr/lib/libSystem.B.dylib
+    - /usr/local/opt/openmotif/lib/libXm.4.dylib
+    - /opt/X11/lib/*
 
 
 
@@ -80,6 +82,9 @@ requirements:
     #- nifti_clib
     #- gifti_clib
     - libnetcdf
+    - gts
+    - f2c
+
 
   run:
     # - r
