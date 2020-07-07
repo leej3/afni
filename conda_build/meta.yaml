@@ -57,17 +57,17 @@ requirements:
     - freeglut # [linux]
     - expat
     - gsl
-    - openmotif-dev # [linux]
+    - openmotif-dev 
     - glib
-    - xorg-libxpm # [linux]
-    - xorg-libxmu # [linux]
-    - xorg-libxi # [linux]
-    - xorg-libx11 # [linux]
-    - xorg-libxt # [linux]
-    - xorg-libxft # [linux]
-    - xorg-libxcb # [linux]
-    - xorg-libxfixes  # [linux]
-    - xorg-libxext # [linux]
+    - xorg-libxpm 
+    - xorg-libxmu 
+    - xorg-libxi 
+    - xorg-libx11 
+    - xorg-libxt 
+    - xorg-libxft 
+    - xorg-libxcb 
+    - xorg-libxfixes  
+    - xorg-libxext 
     - mesalib # [linux]
     # - r
     # - r-rmpi
