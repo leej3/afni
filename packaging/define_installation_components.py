@@ -38,11 +38,11 @@ sp.check_output(
 cmake -GNinja {src_dir} \
     -DUSE_SYSTEM_ALL=ON \
     -DGENERATE_PACKAGING_COMPONENTS=ON \
-    -DCOMP_OPENGL_DEPENDENT_GUI_PROGS=ON \
-    -DCOMP_X_DEPENDENT_GUI_PROGS=ON \
+    -DCOMP_ADD_SUMA=ON \
+    -DCOMP_ADD_GUI=ON \
     -DCOMP_ADD_RSTATS=ON \
     -DCOMP_ADD_TCSH=ON \
-    -DCOMP_ADD_BINARIES=ON
+    -DCOMP_ADD_CORE_BINARIES=ON
 """,
     # using system nifti should be removed              !!!!!! \
     shell=True,
@@ -59,12 +59,12 @@ sp.check_output(
 cmake {src_dir}\
     -DUSE_SYSTEM_ALL=ON \
     -DUSE_SYSTEM_DCM2NIIX=ON \
-    -DCOMP_OPENGL_DEPENDENT_GUI_PROGS=OFF \
-    -DCOMP_X_DEPENDENT_GUI_PROGS=OFF \
+    -DCOMP_ADD_SUMA=OFF \
+    -DCOMP_ADD_GUI=OFF \
     -DCOMP_ADD_RSTATS=OFF \
     -DCOMP_ADD_PYTHON=OFF \
     -DCOMP_ADD_TCSH=OFF \
-    -DCOMP_ADD_BINARIES=OFF
+    -DCOMP_ADD_CORE_BINARIES=OFF
 ninja
 ninja install  > components/0_corelibs.txt
 """,
@@ -78,7 +78,7 @@ sp.check_output(
 ninja uninstall
 cmake {src_dir}\
     -DCOMP_ADD_TCSH=OFF \
-    -DCOMP_ADD_BINARIES=ON
+    -DCOMP_ADD_CORE_BINARIES=ON
 ninja
 ninja install  > components/1_corebinaries.txt
 """,
@@ -119,7 +119,7 @@ sp.check_output(
     f"""
 ninja uninstall
 cmake {src_dir}\
-    -DCOMP_X_DEPENDENT_GUI_PROGS=ON
+    -DCOMP_ADD_GUI=ON
 ninja
 ninja install  > components/4_gui.txt
 """,
@@ -133,7 +133,7 @@ sp.check_output(
 ninja uninstall
 cmake -GNinja {src_dir}\
     -DUSE_SYSTEM_GTS=ON \
-    -DCOMP_OPENGL_DEPENDENT_GUI_PROGS=ON
+    -DCOMP_ADD_SUMA=ON
 ninja install  > components/5_suma.txt
 """,
     shell=True,

@@ -100,7 +100,7 @@ foreach(target plug_scatplot plug_nlfit)
     )
 endforeach(target)
 
-if(COMP_ADD_BINARIES)
+if(COMP_ADD_CORE_BINARIES)
   foreach(target afni_open aiv Xphace)
     add_afni_executable(${target} ${target}.c)
     target_link_libraries(${target} 

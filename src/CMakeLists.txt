@@ -82,7 +82,7 @@ if(NOT COMP_CORELIBS_ONLY)
 endif()
 
 # Add majority of binaries
-if(COMP_ADD_BINARIES)
+if(COMP_ADD_CORE_BINARIES)
   include(CMakeLists_binaries.txt)
 endif()
 
@@ -97,14 +97,14 @@ if(COMP_ADD_PYTHON)
 endif()
 
 # Add targets with a dependency on X
-if(COMP_X_DEPENDENT_GUI_PROGS)
+if(COMP_ADD_GUI)
   add_subdirectory(coxplot)
   include(CMakeLists_x_dependent.txt)
   set(PROGRAMS_BUILT mrix)
 endif()
 
 # Add suma
-if(COMP_OPENGL_DEPENDENT_GUI_PROGS)
+if(COMP_ADD_SUMA)
   # segtools/avovk only used by suma so add it here
   add_subdirectory(avovk)
   add_subdirectory(SUMA)

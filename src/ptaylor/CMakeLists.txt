@@ -20,7 +20,7 @@ target_link_libraries(track_tools
   PRIVATE AFNI::3DEdge NIFTI::nifti2 GSL::gsl)
 
 
-if(COMP_ADD_BINARIES)
+if(COMP_ADD_CORE_BINARIES)
   foreach(
     target
     1dDW_Grad_o_Mat

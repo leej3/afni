@@ -5,7 +5,7 @@
 # corelibs: Always built. Many of the shared object libraries in this
 # repo as well as the model files.
 
-# afni_corebinaries: Built if COMP_ADD_BINARIES is set. Many of the c binaries
+# afni_corebinaries: Built if COMP_ADD_CORE_BINARIES is set. Many of the c binaries
 # have few dependencies outside of this codebase and are packaged with this
 # component
 
@@ -68,19 +68,19 @@ option(COMP_CORELIBS_ONLY
        "Only build core libraries, no SUMA, plugins or programs" OFF
 )
 cmake_dependent_option(
-  COMP_ADD_BINARIES "Build a large portion of the C executables" ON
+  COMP_ADD_CORE_BINARIES "Build a large portion of the C executables" ON
   "NOT COMP_CORELIBS_ONLY" OFF
 )
 
 cmake_dependent_option(
   COMP_ADD_TCSH "Include tcsh scripts in installation" ON
-  "NOT COMP_CORELIBS_ONLY;COMP_ADD_BINARIES" OFF
+  "NOT COMP_CORELIBS_ONLY;COMP_ADD_CORE_BINARIES" OFF
 )
 mark_as_advanced(COMP_ADD_TCSH)
 
 cmake_dependent_option(
   COMP_ADD_PYTHON "Includes scripts and modules for imports in python." ON 
-  "NOT COMP_CORELIBS_ONLY;COMP_ADD_BINARIES" OFF
+  "NOT COMP_CORELIBS_ONLY;COMP_ADD_CORE_BINARIES" OFF
 )
 mark_as_advanced(COMP_ADD_PYTHON)
 set_if_not_defined(STANDARD_PYTHON_INSTALL "afnipy installation is required for running the tests suite" ON)
@@ -91,16 +91,16 @@ cmake_dependent_option(
 )
 
 cmake_dependent_option(
-  COMP_X_DEPENDENT_GUI_PROGS "Build GUI applications with plugins." ON
-  "NOT COMP_CORELIBS_ONLY;COMP_ADD_BINARIES" OFF
+  COMP_ADD_GUI "Build AFNI gui with plugins, and some other X-dependent applications." ON
+  "NOT COMP_CORELIBS_ONLY;COMP_ADD_CORE_BINARIES" OFF
 )
 
 cmake_dependent_option(
   COMP_ADD_PLUGINS "Build plugins for AFNI GUI." ON 
-  "COMP_X_DEPENDENT_GUI_PROGS;" OFF
+  "COMP_ADD_GUI;" OFF
 )
 mark_as_advanced(COMP_ADD_PLUGINS)
-if(NOT (COMP_ADD_PLUGINS) AND (COMP_X_DEPENDENT_GUI_PROGS))
+if(NOT (COMP_ADD_PLUGINS) AND (COMP_ADD_GUI))
   message(FATAL_ERROR "Building the plugins is currently a mandatory part of add the AFNI GUI to the build")
 endif()
 
@@ -112,10 +112,23 @@ cmake_dependent_option(
 )
 
 cmake_dependent_option(
-  COMP_OPENGL_DEPENDENT_GUI_PROGS
-  "Build OPEN_GL dependent GUI applications with plugins." ON
-  "COMP_X_DEPENDENT_GUI_PROGS" OFF
+  COMP_ADD_SUMA
+  "Build OPEN_GL dependent progs, most notably the suma suite of programs." ON
+  "COMP_ADD_GUI" OFF
 )
+
+# Manage restricted installation of specific components. This can be used for
+# packaging purposes. If a specific component needs to be installed
+# individually this can be used. So for example all of the X dependent
+# programs. These will then fail at runtime unless the sub-packages it depends
+# on (corelibs,etc) have also been installed. Components can be inferred from
+# the COMP_... variables. i.e. PYTHON,TCSH,GUI,OPENGL_DEPENDENT_GUI_PROGS.
+# This variable can be set on the cmake invocation by defining the variable.
+# e.g. cmake -DCOMP_INSTALL_RESTRICTED_LIST='PYTHON;TCSH' $SRC_DIR
+set_if_not_defined(COMP_INSTALL_RESTRICTED_LIST "")
+mark_as_advanced(COMP_INSTALL_RESTRICTED_LIST)
+set(ALLOWED_INSTALL_COMPS "SUMA;GUI;PYTHON;TCSH;CORE_BINARIES")
+check_afni_install_components("${ALLOWED_INSTALL_COMPS}" "${COMP_INSTALL_RESTRICTED_LIST}")
 
 
 # Define other customizations to the build-process

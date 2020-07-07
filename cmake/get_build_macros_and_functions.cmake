@@ -67,16 +67,16 @@ function(get_expected_target_list mapping targets_label)
     )
   # message(" filtered_list: ${filtered_list}")
 
-  if(NOT (COMP_ADD_BINARIES))
+  if(NOT (COMP_ADD_CORE_BINARIES))
     filter_out_components( "${mapping}" "corebinaries" "${filtered_list}" filtered_list)
   endif()
 
 
-  if(NOT (COMP_X_DEPENDENT_GUI_PROGS))
+  if(NOT (COMP_ADD_GUI))
     filter_out_components( "${mapping}" "gui" "${filtered_list}" filtered_list)
   endif()
 
-  if(NOT (COMP_OPENGL_DEPENDENT_GUI_PROGS))
+  if(NOT (COMP_ADD_SUMA))
     filter_out_components( "${mapping}" "suma" "${filtered_list}" filtered_list)
   endif()
 
@@ -297,6 +297,7 @@ function(add_afni_target_properties target)
   endif()
   log_target_as_installed(${target})
   # message("${target} -------${component}")
+
 
   install(
     TARGETS ${target}

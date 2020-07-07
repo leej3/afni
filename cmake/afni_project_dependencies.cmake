@@ -55,7 +55,7 @@ if(NOT COMP_CORELIBS_ONLY)
   endif()
 endif()
 
-if(COMP_X_DEPENDENT_GUI_PROGS)
+if(COMP_ADD_GUI)
   find_package(JPEG 62 REQUIRED)
   find_package(X11 REQUIRED)
   optional_bundle(src/XmHTML)
@@ -63,7 +63,7 @@ endif()
 
 
 # SUMA dependency management
-if(COMP_OPENGL_DEPENDENT_GUI_PROGS)
+if(COMP_ADD_SUMA)
   # Check for and configure for external dependencies
   if(APPLE)
     find_package(XQuartzGL REQUIRED)
