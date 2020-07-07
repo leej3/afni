@@ -361,3 +361,16 @@ add_custom_command(TARGET suma
                      USES_TERMINAL
                      )
 endfunction()
+
+
+function(check_afni_install_components allowed_install_comps comp_install_restricted_list)
+  foreach(COMP ${comp_install_restricted_list})
+    list(FIND allowed_install_comps ${COMP} COMP_INDEX)
+
+    if("${COMP_INDEX}" STREQUAL "-1")
+      message(
+        FATAL_ERROR 
+        "${COMP} was provided as a component to install. This is not known to be a valid component \(one of ${allowed_install_comps}\)"
+        )
+  endforeach()
+endfunction()
