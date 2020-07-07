@@ -65,7 +65,7 @@ endif()
 # SUMA dependency management
 if(COMP_OPENGL_DEPENDENT_GUI_PROGS)
   # Check for and configure for external dependencies
-  if(APPLE)
+  if(APPLE AND NOT $ENV{CONDA_BUILD})
     find_package(XQuartzGL REQUIRED)
   else()
     find_package(OpenGL REQUIRED)

@@ -106,6 +106,21 @@
 
 #ifndef _XmHTMLP_h_
 #define _XmHTMLP_h_
+#ifdef _X_SENTINEL
+# undef _X_SENTINEL
+#endif
+#define _X_SENTINEL(x)     /*nada*/
+
+#ifdef _X_DEPRECATED
+# undef _X_DEPRECATED
+#endif
+#define _X_DEPRECATED  /*nada*/
+
+#ifdef _X_ATTRIBUTE_PRINTF
+# undef _X_ATTRIBUTE_PRINTF
+#endif
+#define _X_ATTRIBUTE_PRINTF  /*nada*/
+
 
 #include <X11/Xatom.h>		/* property defines */
 #include <X11/IntrinsicP.h>	/* fast macros */

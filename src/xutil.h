@@ -7,6 +7,17 @@
 #ifndef _MCW_XUTIL_HEADER_
 #define _MCW_XUTIL_HEADER_
 
+/* X from conda not xquartz */
+#ifdef _X_SENTINEL
+# undef _X_SENTINEL
+#endif
+#define _X_SENTINEL(x)     /*nada*/
+
+#ifdef _X_DEPRECATED
+# undef _X_DEPRECATED
+#endif
+#define _X_DEPRECATED  /*nada*/
+
 #include <X11/X.h>
 #include <X11/Intrinsic.h>
 #include <X11/IntrinsicP.h>

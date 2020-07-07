@@ -125,11 +125,28 @@
 #define XmHTMLVersion \
 	(XmHTMLVERSION * 1000 + XmHTMLREVISION * 100 + XmHTMLUPDATE_LEVEL)
 
+
 /* used by Imake to get Shared library version numbering */
 #ifndef _LIBRARY
 
 #define XmHTMLVERSION_STRING \
 	"XmHTML Beta Version 1.1.7 (C)Ripley Software Development"
+
+#ifdef _X_SENTINEL
+# undef _X_SENTINEL
+#endif
+#define _X_SENTINEL(x)     /*nada*/
+
+#ifdef _X_DEPRECATED
+# undef _X_DEPRECATED
+#endif
+#define _X_DEPRECATED  /*nada*/
+
+#ifdef _X_ATTRIBUTE_PRINTF
+# undef _X_ATTRIBUTE_PRINTF
+#endif
+#define _X_ATTRIBUTE_PRINTF  /*nada*/
+
 
 /* Required includes */
 #include <X11/Intrinsic.h>
