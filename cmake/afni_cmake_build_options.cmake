@@ -64,9 +64,18 @@ endif()
 
 option(BUILD_SHARED_LIBS "Toggle building shared libraries" ON)
 
+
+# The following defines build components. Toggling the following variables can
+# be used to tune what parts of the AFNI suite of tools are included in the
+# build. By default, everything that is built is installed but for the
+# purposes of packaging, one can define a list of components in the
+# variable COMP_INSTALL_RESTRICTED_LIST to restrict what files are
+# actually installed
 option(COMP_CORELIBS_ONLY
        "Only build core libraries, no SUMA, plugins or programs" OFF
 )
+set(COMP_ADD_CORE_LIBRARIES "Core C libraries" ON)
+
 cmake_dependent_option(
   COMP_ADD_CORE_BINARIES "Build a large portion of the C executables" ON
   "NOT COMP_CORELIBS_ONLY" OFF
@@ -127,7 +136,7 @@ cmake_dependent_option(
 # e.g. cmake -DCOMP_INSTALL_RESTRICTED_LIST='PYTHON;TCSH' $SRC_DIR
 set_if_not_defined(COMP_INSTALL_RESTRICTED_LIST "")
 mark_as_advanced(COMP_INSTALL_RESTRICTED_LIST)
-set(ALLOWED_INSTALL_COMPS "SUMA;GUI;PYTHON;TCSH;CORE_BINARIES")
+set(ALLOWED_INSTALL_COMPS "SUMA;GUI;PYTHON;TCSH;CORE_BINARIES;CORE_LIBRARIES;RSTATS")
 check_afni_install_components("${ALLOWED_INSTALL_COMPS}" "${COMP_INSTALL_RESTRICTED_LIST}")
 
 

@@ -297,8 +297,8 @@ function(add_afni_target_properties target)
   endif()
   log_target_as_installed(${target})
   # message("${target} -------${component}")
-
-
+  list(FIND COMP_INSTALL_RESTRICTED_LIST ${component} COMP_INDEX)
+  if("" STREQUAL COMP_INSTALL_RESTRICTED_LIST OR COMP_INDEX)
   install(
     TARGETS ${target}
     COMPONENT ${component}
@@ -308,6 +308,7 @@ function(add_afni_target_properties target)
     PUBLIC_HEADER DESTINATION ${AFNI_INSTALL_INCLUDE_DIR}
     # PRIVATE_HEADER DESTINATION ${AFNI_INSTALL_INCLUDE_DIR}
   )
+  endif()
 endfunction()
 
 function(check_header_has_been_created HEADER_PATH)
@@ -368,10 +369,17 @@ function(check_afni_install_components allowed_install_comps comp_install_restri
   foreach(COMP ${comp_install_restricted_list})
     list(FIND allowed_install_comps ${COMP} COMP_INDEX)
 
+    # Check all components requested are valid
     if("${COMP_INDEX}" STREQUAL "-1")
       message(
-        FATAL_ERROR 
+        FATAL_ERROR
         "${COMP} was provided as a component to install. This is not known to be a valid component \(one of ${allowed_install_comps}\)"
         )
+    endif()
+
+    # Check components requested are actually built
+    if(NOT COMP_ADD_${COMP})
+      message(FATAL_ERROR "The installation of ${COMP} component has been requested but COMP_ADD_${COMP} has not been set to ON")
+    endif()
   endforeach()
 endfunction()
