@@ -42,7 +42,6 @@ target_sources(
 target_include_directories(
   libheaders
   INTERFACE 
-            $<TARGET_PROPERTY:AFNI::coxplot,INTERFACE_INCLUDE_DIRECTORIES>
             $<TARGET_PROPERTY:AFNI::3DEdge,INTERFACE_INCLUDE_DIRECTORIES>
             $<TARGET_PROPERTY:AFNI::niml,INTERFACE_INCLUDE_DIRECTORIES>
             $<TARGET_PROPERTY:NIFTI::nifti2,INTERFACE_INCLUDE_DIRECTORIES>
@@ -51,8 +50,6 @@ target_include_directories(
             ${CMAKE_CURRENT_BINARY_DIR}
             ${CMAKE_CURRENT_SOURCE_DIR}
             ${CMAKE_CURRENT_SOURCE_DIR}/rickr
-            $<TARGET_PROPERTY:Motif::Motif,INTERFACE_INCLUDE_DIRECTORIES>
-            $<IF:$<BOOL:${APPLE}>,${X11_INCLUDE_DIR},>
 )
 target_compile_definitions(libheaders INTERFACE "REPLACE_XT")
 
@@ -95,7 +92,7 @@ set(PCOR_DIR ${CMAKE_CURRENT_BINARY_DIR}/configured_pcor)
 configure_file(pcor.h "${PCOR_DIR}/pcor.h" COPYONLY)
 target_include_directories(
   pcor_objs
-  PRIVATE $<TARGET_PROPERTY:AFNI::coxplot,INTERFACE_INCLUDE_DIRECTORIES>
+  PRIVATE
           $<TARGET_PROPERTY:AFNI::niml,INTERFACE_INCLUDE_DIRECTORIES>
           $<TARGET_PROPERTY:NIFTI::nifti2,INTERFACE_INCLUDE_DIRECTORIES>
           ${CMAKE_CURRENT_SOURCE_DIR}
@@ -377,7 +374,7 @@ add_library(
 )
 target_link_libraries(thd_objs 
 PUBLIC libheaders
-PRIVATE coxplot)
+)
 
 add_library(
   mri_objs OBJECT
@@ -524,7 +521,6 @@ target_link_libraries(
   mri
   PUBLIC  m 
           libheaders
-          AFNI::coxplot
   PRIVATE 
           $<$<BOOL:${USE_GIFTI}>:GIFTI::giftiio>
           AFNI::3DEdge

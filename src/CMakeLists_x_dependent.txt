@@ -24,11 +24,11 @@ target_link_libraries(
   mrix
   PUBLIC 
            AFNI::mri
+           AFNI::coxplot
            Motif::Motif
            X11::Xt
            X11::X11
   PRIVATE
-          AFNI::coxplot
           $<IF:$<BOOL:${USE_SYSTEM_XMHTML}>,XmTHML::XmHTML,AFNI::XmHTML>
 )
 
