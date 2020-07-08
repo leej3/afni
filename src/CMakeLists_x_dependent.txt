@@ -2,27 +2,34 @@
 
 add_subdirectory(svm)
 add_subdirectory(leej3)
+
+add_library(someafobjs OBJECT afni_warp.c pbar_color_defs.c afni_ports.c)
+target_link_libraries(someafobjs libheaders)
 add_afni_library(
   mrix
+  $<TARGET_OBJECTS:someafobjs>
   bbox.c
   coxplot/plot_motif.c
   coxplot/plot_strip.c
   coxplot/plot_ts.c
   coxplot/plot_x11.c
+  mri_coxplot.c
   display.c
   imseq.c
   LiteClue.c
   suma_help.c
+  thd_atlas.c
   xim.c
   xutil.c
   xutil_webber.c
+  vol2surf.c
 )
 set_target_properties(
-  mrix PROPERTIES PUBLIC_HEADER "imseq.h;display.h;xim.h;bbox.h;xutil.h"
+  mrix PROPERTIES PUBLIC_HEADER "imseq.h;display.h;xim.h;bbox.h;xutil.h;vol2surf.h;thd_atlas.h"
 )
 target_link_libraries(
   mrix
-  PUBLIC 
+  PUBLIC
            AFNI::mri
            AFNI::coxplot
            Motif::Motif

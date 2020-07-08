@@ -30,14 +30,12 @@ target_sources(
   ${CMAKE_CURRENT_SOURCE_DIR}/rickr/r_idisp.h
   ${CMAKE_CURRENT_SOURCE_DIR}/rickr/r_new_resam_dset.h
   ${CMAKE_CURRENT_SOURCE_DIR}/tagset.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/thd_atlas.h
   ${CMAKE_CURRENT_SOURCE_DIR}/thd_compress.h
   ${CMAKE_CURRENT_SOURCE_DIR}/thd_iochan.h
   ${CMAKE_CURRENT_SOURCE_DIR}/thd_maker.h
   ${CMAKE_CURRENT_SOURCE_DIR}/thd_ttatlas_CA_EZ.h
   ${CMAKE_CURRENT_SOURCE_DIR}/thd_ttatlas_query.h
   ${CMAKE_CURRENT_SOURCE_DIR}/vecmat.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/vol2surf.h
 )
 target_include_directories(
   libheaders
@@ -98,6 +96,7 @@ target_include_directories(
           ${CMAKE_CURRENT_SOURCE_DIR}
           ${PCOR_DIR}
 )
+target_compile_definitions(pcor_objs PRIVATE REPLACE_XT)
 
 foreach(type byte float short)
   set(output_file "${CMAKE_CURRENT_BINARY_DIR}/configured_pcor/afni_pcor_${type}.c")
@@ -144,8 +143,7 @@ set_source_files_properties(
 )
 set_os_flags(thd_filestuff.c)
 set_os_flags(machdep.c)
-add_library(someafobjs OBJECT afni_warp.c pbar_color_defs.c afni_ports.c)
-target_link_libraries(someafobjs libheaders)
+
 add_library(
   misc_objs OBJECT
   afni_suma.c
@@ -154,7 +152,6 @@ add_library(
   matrix.c
   misc_math.c
   nifti_statlib.c
-  vol2surf.c
 )
 target_link_libraries(misc_objs
   PUBLIC
@@ -163,8 +160,14 @@ target_link_libraries(misc_objs
   )
 
 add_library(
-  suma_objs OBJECT suma_afni_surface.c suma_algorithms.c suma_datasets.c suma_niml.c
-                   suma_string_manip.c suma_utils.c
+  suma_objs OBJECT
+    suma_afni_surface.c
+    suma_algorithms.c
+    suma_datasets.c
+    suma_niml.c
+    suma_string_manip.c
+    suma_utils.c
+                   
 )
 
 target_link_libraries(suma_objs libheaders)
@@ -246,7 +249,6 @@ add_library(
   thd_1Dtodset.c
   thd_3Ddset.c
   thd_analyzeread.c
-  thd_atlas.c
   thd_atr.c
   thd_automask.c
   thd_autonudge.c
@@ -403,7 +405,6 @@ add_library(
   mri_complex_arith.c
   mri_copy.c
   mri_counter.c
-  mri_coxplot.c
   mri_cut.c
   mri_dicom_hdr.c
   mri_dicom_stuff.c
@@ -509,7 +510,6 @@ target_sources(
   $<TARGET_OBJECTS:mri_objs>
   $<TARGET_OBJECTS:parser>
   $<TARGET_OBJECTS:pcor_objs>
-  $<TARGET_OBJECTS:someafobjs>
   $<TARGET_OBJECTS:suma_objs>
   $<TARGET_OBJECTS:thd_objs>
   rickr/r_idisp.c
