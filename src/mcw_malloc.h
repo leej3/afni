@@ -14,12 +14,6 @@
 #include <stdio.h>
 #include <stdint.h>
 
-/* Use mrix for X dependent programs */
-#ifdef __BUILDING_QUICKLOOK_PLUGIN__
-  #include "IntrinsicQuickLook.h"
-#else
-  #include <X11/Intrinsic.h>
-#endif
 
 #include "machdep.h"
 
@@ -59,6 +53,14 @@ extern void   mcw_malloc_dump_fp(FILE *fp) ;
 #else
 
 #define USING_MCW_MALLOC
+
+/* Use mrix for X dependent programs */
+#ifdef __BUILDING_QUICKLOOK_PLUGIN__
+  #include "IntrinsicQuickLook.h"
+#else
+  #include <X11/Intrinsic.h>
+#endif
+
 
 /*-- define macros to replace the source code's use of malloc(), etc. --*/
 

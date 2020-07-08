@@ -62,6 +62,8 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DREAD_WRITE_64 -DLINUX -DDARWIN")
 endif()
 
+add_compile_definitions(DONT_USE_MCW_MALLOC)
+
 # ##### Docs, licence, and README
 set(DOC_DIR ${PROJECT_SOURCE_DIR}/doc)
 quotize("${DOC_DIR}/README/README.copyright" license)

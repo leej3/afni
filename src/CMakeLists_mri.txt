@@ -138,7 +138,7 @@ add_library(parser OBJECT ${CMAKE_CURRENT_BINARY_DIR}/parser.c parser_int.c)
 target_include_directories(
   parser PRIVATE $<TARGET_PROPERTY:AFNI::niml,INTERFACE_INCLUDE_DIRECTORIES>
 )
-
+target_compile_definitions(parser PRIVATE REPLACE_XT)
 set_source_files_properties(
   thd_notes.c thd_vcheck.c PROPERTIES COMPILE_DEFINITIONS "SHOWOFF"
 )
