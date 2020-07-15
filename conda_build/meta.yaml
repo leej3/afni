@@ -1,15 +1,12 @@
-{% set name = "afni" %}
 # {% set version = "18.2.06" %}
 # {% set sha256 = "dee033d8435740e844308415f73ce674c60f53ed42a52085bd706b05f2218042" %}
-
 package:
-  name: {{ name }}
+  name: afni
   version: {{ GIT_DESCRIBE_TAG or '99.99.99'}}
 
 source:
   git_url: ..
   rev: {{ GIT_DESCRIBE_TAG  or "HEAD"}}
-
   # url:  https://github.com/{{ name }}/{{ name }}/archive/AFNI_{{ version }}.tar.gz
   # sha256: {{ sha256 }}
   # patches:
@@ -17,7 +14,7 @@ source:
   #   - suma_makefile.patch
 
 build:
-  number: 2
+  number: 0
   # skip: True # [osx]
   # skip: True # [py3k]
 
@@ -26,81 +23,95 @@ build:
     - /usr/local/opt/openmotif/lib/libXm.4.dylib
     - /opt/X11/lib/*
 
-
-
 requirements:
-  build:
-    - {{ compiler('c') }}
-    - cmake >=3.13
-    - ninja
-    - pkg-config
-    - {{ cdt('mesa-libgl-devel') }}  # [linux]
-    - {{ cdt('mesa-dri-drivers') }}  # [linux]
-    - {{ cdt('libselinux') }}  # [linux]
-    - {{ cdt('libxdamage') }}  # [linux]
-    - {{ cdt('libxxf86vm') }}  # [linux]
-    - llvm-openmp  # [osx]
-    - libgomp      # [linux]
-
-
-
-
-
-  host:
-    - python
-    - libpng 1.6
-    - jpeg
-    - zlib
-    - openssl
-    - freetype
-    - libglu # [linux]
-    - freeglut # [linux]
-    - expat
-    - gsl
-    - openmotif-dev # [linux]
-    - glib
-    - xorg-libxpm # [linux]
-    - xorg-libxmu # [linux]
-    - xorg-libxi # [linux]
-    - xorg-libx11 # [linux]
-    - xorg-libxt # [linux]
-    - xorg-libxft # [linux]
-    - xorg-libxcb # [linux]
-    - xorg-libxfixes  # [linux]
-    - xorg-libxext # [linux]
-    - mesalib # [linux]
-    # - r
-    # - r-rmpi
-    # - r-afex
-    # - r-phia
-    # - r-snow
-    # - r-nlme
-    # - r-lme4
-    # - r-paran
-    # - r-psych
-    # - r-brms
-    #- nifti_clib
-    #- gifti_clib
-    - libnetcdf
-    - f2c
-
-
   run:
-    # - r
-    # - r-rmpi
-    # - r-afex
-    # - r-phia
-    # - r-snow
-    # - r-nlme
-    # - r-lme4
-    # - r-paran
-    # - r-psych
-    # - r-brms
-    - tcsh  
+    - afni-core-libraries
+    - afni-core-binaries
+    - afni-python
+    - afni-tcsh
+    - afni-gui
+    - afni-suma
+    # - afni-rstats
+
+outputs:
+  - name: afni-core-libraries
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - cmake >=3.13
+        - ninja
+        - pkg-config
+        - llvm-openmp  # [osx]
+        - libgomp      # [linux]
+      host:
+        - libpng 1.6
+        - jpeg
+        - zlib
+        - openssl
+        - freetype
+        - expat
+        - gsl
+        - libnetcdf
+        - f2c
+        - tcsh
+        # - nifti_clib
+        # - gifti_clib
+      script: conda_build.sh
+      script_interpreter: conda_build.sh arg values
+  - name: afni-core-binaries
+    requirements:
+      - afni-core-libraries
+  - name: afni-python
+    requirements:
+      - python
+      - matplotlib
+  - name: afni-tcsh
+    requirements:
+      - tcsh
+      - afni-core-libraries
+      - afni-core-binaries
+  - name: afni-gui
+    requirements:
+      - afni-core-libraries
+      - xorg-libxpm # [linux]
+      - xorg-libxmu # [linux]
+      - xorg-libxi # [linux]
+      - xorg-libx11 # [linux]
+      - xorg-libxt # [linux]
+      - xorg-libxft # [linux]
+      - xorg-libxcb # [linux]
+      - xorg-libxfixes  # [linux]
+      - xorg-libxext # [linux]
+      - openmotif-dev # [linux] 
+  - name: afni-suma
+    requirements:
+      - {{ cdt('mesa-libgl-devel') }}  # [linux]
+      - {{ cdt('mesa-dri-drivers') }}  # [linux]
+      - {{ cdt('libselinux') }}  # [linux]
+      - {{ cdt('libxdamage') }}  # [linux]
+      - {{ cdt('libxxf86vm') }}  # [linux]
+      - afni-gui
+      - mesalib # [linux]
+      - glib
+  # - name: afni-rstats
+  #   requirements:
+  #     - afni-gui
+  #     - afni-core-binaries
+  #     - r
+  #     - r-rmpi
+  #     - r-afex
+  #     - r-phia
+  #     - r-snow
+  #     - r-nlme
+  #     - r-lme4
+  #     - r-paran
+  #     - r-psych
+  #     - r-brms
+
 
 test:
   commands:
-    - afni --help
+    - afni -help
 
 about:
   home: https://afni.nimh.nih.gov/afni
@@ -113,3 +124,46 @@ about:
 extra:
   container:
     extended-base: True
+
+  # host:
+          #   - python
+          #   - libpng 1.6
+          #   - jpeg
+          #   - zlib
+          #   - openssl
+          #   - freetype
+          #   - libglu # [linux]
+          #   - freeglut # [linux]
+          #   - expat
+          #   - gsl
+          #   - openmotif-dev # [linux]
+          #   - glib
+          #   - xorg-libxpm # [linux]
+          #   - xorg-libxmu # [linux]
+          #   - xorg-libxi # [linux]
+          #   - xorg-libx11 # [linux]
+          #   - xorg-libxt # [linux]
+          #   - xorg-libxft # [linux]
+          #   - xorg-libxcb # [linux]
+          #   - xorg-libxfixes  # [linux]
+          #   - xorg-libxext # [linux]
+          #   - mesalib # [linux]
+          #   # - r
+          #   # - r-rmpi
+          #   # - r-afex
+          #   # - r-phia
+          #   # - r-snow
+          #   # - r-nlme
+          #   # - r-lme4
+          #   # - r-paran
+          #   # - r-psych
+          #   # - r-brms
+          #   #- nifti_clib
+          #   #- gifti_clib
+          #   - libnetcdf
+          #   - f2c
+
+
+
+          #   - tcsh  
+
