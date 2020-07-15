@@ -1,6 +1,7 @@
 #!/bin/sh
 # See https://docs.conda.io/projects/conda-build/en/latest/resources/compiler-tools.html#an-aside-on-cmake-and-sysroots
 declare -a CMAKE_PLATFORM_FLAGS
+USER_ARGS="$@"
 if [[ ${HOST} =~ .*darwin.* ]]; then
     # specify the compiler
     export CMAKE_C_COMPILER=${CC}
@@ -32,6 +33,7 @@ cmake -DCMAKE_INSTALL_PREFIX=${PREFIX} \
 -DCMAKE_SKIP_INSTALL_RPATH=ON \
 -GNinja \
 $SRC_DIR \
+$USER_ARGS \
 ${CMAKE_PLATFORM_FLAGS[@]} 
 
 ninja install
