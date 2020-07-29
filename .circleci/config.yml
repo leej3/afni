@@ -428,6 +428,8 @@ workflows:
               build_type: ["cmake_build"]
               # cache version should match for all jobs
               image_cache_version: ["0"]
+          requires:
+            - coverage_check
           filters:
             tags:
               only: /.*/
@@ -494,13 +496,13 @@ workflows:
               ignore: /.*/
 
       - coverage_check:
-          name: coverage_check
+          matrix:
+            parameters:
               # cache version should match for all jobs
               image_cache_version: ["0"]
-          requires:
-            - test_cmake_build
+              test_data_cache_version: ["5"]
           filters:
             tags:
-              only: /AFNI_\d\d.\d.\d\d/
-            branches:
               ignore: /.*/
+            branches:
+              only: /.*/
