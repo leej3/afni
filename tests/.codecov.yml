@@ -1,2 +1,2 @@
 fixes:
-  - "opt/afni/src/src::src/"
+  - "/opt/afni/src/src::src/"
