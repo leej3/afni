@@ -1,5 +1,4 @@
 FROM afni/afni_dev_base
-
 ENV PATH=$DESTDIR/usr/local/bin:$PATH
 ARG AFNI_WITH_COVERAGE="0"
 
