@@ -1,13 +1,10 @@
 import attr
-from .utils.misc import is_omp
 import pytest
-from .utils import tools
+from afni_test_utils import tools
 from pathlib import Path
 import shutil
-import datetime as dt
 from datalad import api as datalad
 import os
-import json
 
 
 def make_pretend_repo(dirname):
