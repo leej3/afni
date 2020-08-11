@@ -137,13 +137,14 @@ RUN mkdir $PYTHONUSERBASE
 # Add some more test dependencies
 RUN curl -fsSL https://bootstrap.pypa.io/get-pip.py \
      | python3 - --no-cache-dir --prefix $PYTHONUSERBASE
-RUN pip install \
+RUN python3 -m pip install \
       --no-cache-dir \
         autopep8 \
         black \
         codecov \
         cython \
         datalad \
+        docker \
         ipython \
         matplotlib \
         nibabel \

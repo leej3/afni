@@ -66,49 +66,15 @@ commands:
           name: Run tests
           no_output_timeout: 2h
           command: |
-            # Fail out if docker image does not exist. Should not be pulled from dockerhub...
-            docker image inspect afni/afni_<< parameters.build_type >> 1>/dev/null
-
-            # Define environment for codecov in case it is used
-            ci_env=`bash <(curl -s https://codecov.io/env)`
-            echo $ci_env
-            if [ $(id -u) == "0" ]
-            then
-              # Depending on the environment this is executed the user is
-              # either root or circleci. If the former, nothing should be
-              # mounted and the user in the container should be used
-              other_docker_args=""
+            TEST_ARGS=''
+            if [ "$AFNI_WITH_COVERAGE" != "0" ];then
+              TEST_ARGS="$TEST_ARGS --coverage container --source-mode=test-data-only --reuse-build"
             else
-              # If the circleci user is used, directories should be chowned,
-              # and the test data directory should be mounted into the
-              # container to facilitate data caching
-              other_docker_args='\
-                 --user=root  \
-                 -v $PWD/tests/afni_ci_test_data:/opt/afni/src/tests/afni_ci_test_data \
-                 -e CHOWN_HOME="yes" \
-                 -e CHOWN_HOME_OPTS='-R' \
-                 -e CHOWN_EXTRA="/opt/" \
-                 -e CHOWN_EXTRA_OPTS='-R' \
-                 -e CONTAINER_UID=$(id -u) \
-                 -e CONTAINER_GID=$(id -g)'
+              TEST_ARGS="$TEST_ARGS --verbose container --source-mode=test-data-only"
             fi
-            # Run tests in contain built during build step:
-            docker run \
-                $ci_env \
-                $other_docker_args \
-                -e AFNI_WITH_COVERAGE=$AFNI_WITH_COVERAGE \
-                --rm \
-                -ti \
-                afni/afni_<< parameters.build_type >> \
-                bash -c 'bash /opt/afni/src/tests/run_tests.sh'
-      - run:
-          name: Return permissions to test data
-          command: |
-            if [ $(id -u) == "0" ]
-            then
-              # skipped during coverage testing
-              sudo chown -R $USER:$USER $PWD/tests/afni_ci_test_data
-            fi
+
+            /tmp/src/afni/tests/run_afni_tests.py $TEST_ARGS
+
 
   check_integrity_of_containers:
     description: "Check some of the permissions/user/PATH basics of the containers"
@@ -357,10 +323,13 @@ jobs:
         type: string
       test_data_cache_version:
         type: string
-    machine:
-      image: circleci/classic:201711-01
+    docker:
+      - image: docker:18.01.0-ce-git
     steps:
+      - run: apk add --no-cache git pigz python3 bash curl
+      - run: pip3 install docker
       - checkout
+      - setup_remote_docker
       - write_test_data_cache_version_file:
           cache_name: test_data
       - restore_a_cache:
@@ -372,11 +341,6 @@ jobs:
       - restore_afni_image_cache:
           build_type: << parameters.build_type >>
           image_cache_version: << parameters.image_cache_version >>
-      # - run:
-      #     name: Install coverage and codecov
-      #     command: |
-      #         pyenv install 3.6.3
-      #         pyenv local 3.6.3
       - run_afni_tests:
           build_type: << parameters.build_type >>
           # Save test data as cache for subsequent runs if ideal is not already saved
@@ -433,6 +397,7 @@ jobs:
       AFNI_WITH_COVERAGE: true
     steps:
       - run: apk add --no-cache git pigz python3 bash curl
+      - run: pip3 install docker
       - checkout
       - setup_remote_docker
       - build_afni_image:

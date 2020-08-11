@@ -9,11 +9,18 @@ import functools
 import datetime
 import datetime as dt
 import time
-from scripts.utils import misc
+import contextlib
+import sys
 
-pytest.register_assert_rewrite("scripts.utils.tools")
-import scripts.utils.tools as tools
-from scripts.utils.tools import get_current_test_name
+sys.path.append(str(Path(__file__).parent))
+
+from afni_test_utils import misc
+
+pytest.register_assert_rewrite("afni_test_utils.tools")
+
+
+import afni_test_utils.tools as tools
+from afni_test_utils.tools import get_current_test_name
 import attr
 import re
 
@@ -378,3 +385,21 @@ def pytest_sessionfinish(session, exitstatus):
 @pytest.fixture()
 def ptaylor_env(monkeypatch):
     monkeypatch.setenv("AFNI_COMPRESSOR", "GZIP")
+
+
+@pytest.fixture(autouse=True)
+def _use_test_dir(request):
+    tests_dir = Path(__file__).parent
+    with working_directory(tests_dir):
+        yield
+
+
+@contextlib.contextmanager
+def working_directory(path):
+    """Changes working directory and returns to previous on exit."""
+    prev_cwd = Path.cwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(prev_cwd)
