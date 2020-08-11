@@ -1,0 +1,27 @@
+
+name: afni_dev
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - attrs
+  - autopep8
+  - black
+  - cmake
+  - datalad
+  - docker-py
+  - ipython
+  - matplotlib
+  - nibabel
+  - ninja
+  - pip
+  - pytest
+  - xvfbwrapper
+  - pytest-cov
+  - pytest-xvfb
+  - pip:
+    - pytest-parallel
+    - pdbpp
+    - -e .
+
+

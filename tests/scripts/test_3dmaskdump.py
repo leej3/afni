@@ -1,4 +1,4 @@
-from .utils import tools
+from afni_test_utils import tools
 
 # Define Data
 data_paths = {"mask": "mini_data/mask_3mm.nii.gz", "epi": "mini_data/aligned.nii.gz"}
