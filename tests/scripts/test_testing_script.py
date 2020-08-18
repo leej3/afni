@@ -29,7 +29,8 @@ def test_run_tests(mocked_sp):
         run_tests_func.run_tests(TESTS_DIR, **args_in)
     assert err.typename == "SystemExit"
     assert err.value.code == 0
-    mocked_sp.run.assert_called_with("pytest scripts", shell=True)
+    default_cmd = 'pytest scripts -r=Exs --show-capture=no --tb=no --verbose -s'
+    mocked_sp.run.assert_called_with(default_cmd, shell=True)
 
     tmpdir = tempfile.mkdtemp()
     args_in = {"coverage": True, "build_dir": tmpdir}
@@ -38,7 +39,16 @@ def test_run_tests(mocked_sp):
     assert err.typename == "SystemExit"
     assert err.value.code == 0
 
-    expected_call = f"cd {tmpdir};cmake -GNinja {TESTS_DIR.parent};ARGS='scripts --cov=targets_built --cov-report xml:$PWD/coverage.xml' ninja pytest"
+    expected_call = (
+        f"cd {tmpdir};cmake -GNinja {TESTS_DIR.parent};ARGS='scripts "
+        "-r=Exs --show-capture=no --tb=no --verbose -s "
+        "--cov=targets_built --cov-report xml:$PWD/coverage.xml' ninja "
+        "pytest"
+        )
+
+
+
+
     run_calls = mocked_sp.run.assert_called_with(expected_call, shell=True,)
 
 
@@ -65,6 +75,7 @@ def test_examples_parse_correctly(mocked_dirpath):
     # dir_path needs to be mocked to prevent errors being raise for
     # non-existent paths
     mocked_dirpath.side_effect = lambda x: str(Path(x).expanduser())
+    stdout_ = sys.stdout  # Keep track of the previous value.
 
     for name, example in run_tests_examples.examples.items():
         # Generate the 'sys.argv' for the example
@@ -74,11 +85,19 @@ def test_examples_parse_correctly(mocked_dirpath):
         res = runpy.run_path(str(SCRIPT))
 
         res["sys"].argv = [SCRIPT.name, *arg_list]
-        res["main"].__globals__["run_tests"] = MagicMock()
-        res["main"].__globals__["run_containerized"] = MagicMock()
-        # res['run_tests'] = MagicMock()
-        res["main"]()
+        res["main"].__globals__["run_tests"] = MagicMock(side_effect=SystemExit(0))
+        res["main"].__globals__["run_containerized"] = MagicMock(side_effect=SystemExit(0))
+        with pytest.raises(SystemExit) as err:
+            # Run main function while redirecting to /dev/null
+            sys.stdout = open(os.devnull, "w")
+            res["main"]()
+            sys.stdout = stdout_  # restore the previous stdout.
+        assert err.typename == "SystemExit"
+        assert err.value.code == 0
+
         if "local" in arg_list:
             res["main"].__globals__["run_tests"].assert_called_once()
         elif "container" in arg_list:
             res["main"].__globals__["run_containerized"].assert_called_once()
+
+    sys.stdout = stdout_  # restore the previous stdout.

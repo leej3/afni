@@ -111,9 +111,8 @@ def test_check_user_container_args_with_root():
 def test_get_test_cmd_args():
     # FakeRepo = namedtuple("Repo", ["dirty"])
     # with patch.object(datalad.Dataset, 'repo',spec=FakeRepo(dirty=False)) as mock_method:
-
     cmd_args = ci_funcs.get_test_cmd_args()
-    assert cmd_args == ["scripts"]
+    assert cmd_args == "scripts -r=Exs --show-capture=no --tb=no --verbose -s".split()
 
     cmd_args = ci_funcs.get_test_cmd_args(verbose=True)
     assert "--showlocals" in cmd_args
