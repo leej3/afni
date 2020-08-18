@@ -27,7 +27,8 @@ def parse_user_args():
         action="store_true",
         help="show this help message and exit",
     )
-    parser.add_argument(
+    passing_pytest_args = parser.add_mutually_exclusive_group()
+    passing_pytest_args.add_argument(
         "--extra-args",
         metavar="PYTEST_ARGS",
         help=(
@@ -35,6 +36,14 @@ def parse_user_args():
             "through to pytest. e.g. --extra-args='-k gui --trace'. "
             "Passing --help through to pytest will give you a sense "
             "of all the possibilities... "
+        ),
+    )
+    passing_pytest_args.add_argument(
+        "--overwrite-args",
+        metavar="PYTEST_ARGS",
+        help=(
+            "This should be a quoted string that is passed directly "
+            "through to pytest"
         ),
     )
     parser.add_argument(
@@ -157,7 +166,7 @@ def parse_user_args():
         help="Use build dir in container (conflicts with --build-dir).",
     )
 
-    container = subparsers.add_parser(
+    local = subparsers.add_parser(
         "local",
         help=(
             "Running tests on the host requires additional "
@@ -166,7 +175,11 @@ def parse_user_args():
             "activate afni_dev' "
         ),
     )
-    container = subparsers.add_parser("examples", help=("Show usage examples"),)
+    examples = subparsers.add_parser("examples", help=("Show usage examples"))
+    examples.add_argument('--explain',
+        action="store_true",
+        help="Include a verbose explanation along with the examples",
+     )
 
     args = parser.parse_args()
     if args.help:

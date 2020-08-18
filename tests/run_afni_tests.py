@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from afni_test_utils.container_execution import VALID_MOUNT_MODES, run_containerized
 from afni_test_utils.exceptionhook import setup_exceptionhook
-from afni_test_utils.run_tests_examples import EXAMPLES
+from afni_test_utils.run_tests_examples import EXAMPLES,examples
 from afni_test_utils.run_tests_cli import parse_user_args, make_dir_args_absolute, needs_reduced_dependencies
 
 # When using container dependencies should be minimal: docker, docker-py, python3.
@@ -60,7 +60,10 @@ def main(user_args=None):
     if args_dict["subparser"] == "container":
         run_containerized(tests_dir, **args_dict)
     elif args_dict['subparser'] == 'examples':
-        print(EXAMPLES)
+        if args_dict.get('explain'):
+            print(EXAMPLES)
+        else:
+            print('\n\n'.join(f'{k}: {v}' for k,v in examples.items()))
         sys.exit(0)
     else:
         run_tests(tests_dir, **args_dict)

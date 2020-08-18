@@ -109,7 +109,7 @@ def get_test_cmd_args(**kwargs):
     else:
         cmd_args = ["scripts"]
 
-    cmd_args += '-r=Exs  --show-capture=no --tb=no --verbose -s'.split()
+    cmd_args += "-r=Exs  --show-capture=no --tb=no --verbose -s".split()
 
     if kwargs.get("verbose"):
         cmd_args += " -vv --showlocals -r Esx".split()

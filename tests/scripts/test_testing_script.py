@@ -49,10 +49,10 @@ def test_run_tests_help_works():
         res["sys"].argv = [SCRIPT.name, help_arg]
         with pytest.raises(SystemExit) as err:
             # Run main function while redirecting to /dev/null
-            stdout_ = sys.stdout #Keep track of the previous value.
-            sys.stdout = open(os.devnull, 'w')
+            stdout_ = sys.stdout  # Keep track of the previous value.
+            sys.stdout = open(os.devnull, "w")
             res["main"]()
-            sys.stdout = stdout_ # restore the previous stdout.
+            sys.stdout = stdout_  # restore the previous stdout.
         assert err.typename == "SystemExit"
         assert err.value.code == 0
         for dep in "datalad pytest afnipy run_tests".split():

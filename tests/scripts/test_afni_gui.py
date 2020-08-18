@@ -5,6 +5,7 @@ import pytest
 import os
 import subprocess as sp
 
+
 def test_afni_gui_basic():
 
     cmd = 'afni -no_detach -com "OPEN_WINDOW axialimage; SAVE_JPEG axialimage test1; QUIT"'

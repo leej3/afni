@@ -15,11 +15,12 @@ examples = {
     "execute tests by pattern": "run_afni_tests.py --extra-args='-k mask' local",
     "execute tests by pattern shortcut": "run_afni_tests.py -k mask local",
     "execute tests by previous failure": "run_afni_tests.py --extra-args='--lf' local",
+    "specifying pytest args without this tools defaults": "run_afni_tests.py --overwrite-args='--verbose' local",
     "show shell commands": "run_afni_tests.py --extra-args='-s' local",
     "be verbose": "run_afni_tests.py -v local",
     "use debugger": "run_afni_tests.py --debug local",
     "most basic example for container": "run_afni_tests.py container",
-    "nice output": "run_afni_tests.py -k testing --extra-args='-r Exs  --show-capture=no --tb=no --verbose -s' local",
+    "examples with explanation ": "run_afni_tests.py examples --explain",
 }
 
 EXAMPLES = f"""
@@ -41,7 +42,7 @@ The most basic example ~2~
 
 Under the hood this is running something like:
 "cd /path/to/tests/directory
-pytest scripts -r Exs --tb=no"
+pytest scripts -r=Exs  --show-capture=no --tb=no --verbose -s"
 (where scripts is a directory containing python test scripts, and pytest is a
 python tool used for running a test suite)
 
@@ -80,7 +81,7 @@ system), and finally build time makes use of the aforementioned build system
 to generate the projects executables.
 
 
-Important: It's pytest under the hood ~2~
+Important: It's pytest under the hood ~1~
 
 While this wrapper script interacts with the build systems and facilitates
 testing with containers it is ultimately just a wrapper around the pytest tool
@@ -133,17 +134,17 @@ Another nice trick worth knowing, is that you can re-execute all failed tests fr
     {examples['execute tests by previous failure']}
 
 
-Tweaking the output from a tests run ~1~
+Modifying the reporting of a tests run ~1~
 
-To make the test reporting more verbose a handy shortcut is the -v option
-    {examples['be verbose']}
+By default a number of flags are passed to pytest to supress most python
+output and instead to focus on the commands executed and their failure status.
+You can modify this behavior slighlty by using the --extra-args option as
+described previously; however, at some point you may wish to more carefully
+define this output yourself. At this point your will likely want to use the
+--overwrite-args option. This will pass your arguments through to pytest
+without the usual defaults.
 
-Pytest allows much more customization than this though. For example you can
-enable standard out etc for the test runs (by default pytest captures
-everything). Have a look at the  --show-capture option for pytest. A shorthand
-notation for enabling additional output is the -s flag to pytest:
-
-    {examples['show shell commands']}
+    {examples['specifying pytest args without this tools defaults']}
 
 Debugging failing tests ~1~
 
