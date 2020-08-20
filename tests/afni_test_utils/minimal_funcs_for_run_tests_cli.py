@@ -3,6 +3,38 @@ import argparse
 import sys
 from afni_test_utils.container_execution import VALID_MOUNT_MODES
 from pathlib import Path
+from itertools import compress
+
+PYTEST_GROUP_HELP = "pytest execution modifiers"
+PYTEST_MANUAL_HELP = "Manual pytest management (conflicts with pytest execution modifiers)"
+
+def dir_path(string):
+    dir_in = Path(string).expanduser()
+    if dir_in.exists():
+        return str(dir_in)
+    else:
+        raise NotADirectoryError(string)
+
+
+def make_dir_args_absolute(args_dict):
+    for k in ["abin", "build_dir"]:
+        if k in args_dict:
+            args_dict[k] = str(Path(args_dict[k]).expanduser().absolute())
+
+
+def needs_reduced_dependencies():
+    if any(x in sys.argv for x in ["-h", "-help", "--help"]):
+        return True
+
+    subparser_patterns = ["examples", "container"]
+    if any(x in sys.argv for x in subparser_patterns):
+        # Not sure if this is the sub parser so need to parse the
+        # arguments to check
+        parsed = parse_user_args()
+        if parsed.subparser in subparser_patterns:
+            return True
+
+    return False
 
 
 def parse_user_args():
@@ -26,43 +58,6 @@ def parse_user_args():
         dest="help",
         action="store_true",
         help="show this help message and exit",
-    )
-    passing_pytest_args = parser.add_mutually_exclusive_group()
-    passing_pytest_args.add_argument(
-        "--extra-args",
-        metavar="PYTEST_ARGS",
-        help=(
-            "This should be a quoted string that is passed directly "
-            "through to pytest. e.g. --extra-args='-k gui --trace'. "
-            "Passing --help through to pytest will give you a sense "
-            "of all the possibilities... "
-        ),
-    )
-    passing_pytest_args.add_argument(
-        "--overwrite-args",
-        metavar="PYTEST_ARGS",
-        help=(
-            "This should be a quoted string that is passed directly "
-            "through to pytest"
-        ),
-    )
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Increase the verbosity of pytest"
-    )
-    parser.add_argument(
-        "--filter-expr",
-        "-k",
-        metavar="EXPR",
-        help=(
-            "Expression for pytest to use to filter tests. Equivalent to passing "
-            "--extra-args='-k EXPR'. "
-        ),
-    )
-    parser.add_argument(
-        "--file",
-        "-f",
-        help=("Relative path to test module to run. e.g. scripts/test_3dcopy.py"),
-        type=dir_path,
     )
 
     dir_for_build_type = parser.add_mutually_exclusive_group()
@@ -115,10 +110,65 @@ def parse_user_args():
         help="Use codecov for test coverage (needs --build-dir).",
     )
 
+
+    pytest_mod = parser.add_argument_group('pytest execution modifiers')
+    pytest_mod.add_argument(
+        "--extra-args",
+        metavar="PYTEST_ARGS",
+        help=(
+            "This should be a quoted string that is passed directly "
+            "through to pytest. e.g. --extra-args='-k gui --trace'. "
+            "Passing --help through to pytest will give you a sense "
+            "of all the possibilities... "
+        ),
+    )
+    pytest_mod.add_argument(
+        "--verbose", "-v",
+        action='count',
+        default=0,
+        help="Increase the verbosity of reporting (conflicts with --debug).",
+    )
+    pytest_mod.add_argument(
+        "--log-file-level",
+        choices='DEBUG INFO WARNING ERROR CRITICAL'.split(),
+        help="Set the verbosity of the output recorded in the log file.",
+    )
+    pytest_mod.add_argument(
+        "--filter-expr",
+        "-k",
+        metavar="EXPR",
+        help=(
+            "Expression for pytest to use to filter tests. Equivalent to passing "
+            "--extra-args='-k EXPR'. "
+        ),
+    )
+    pytest_mod.add_argument(
+        "--file",
+        "-f",
+        help=("Relative path to test module to run. e.g. scripts/test_3dcopy.py"),
+        type=dir_path,
+    )
+    pytest_mod.add_argument(
+        "--lf",
+        help=("Only run tests that failed on the last test run."),
+        action="store_true",
+    )
+
+    pytest_mod_manual = parser.add_argument_group(PYTEST_MANUAL_HELP)
+    pytest_mod_manual.add_argument(
+        "--overwrite-args",
+        metavar="PYTEST_ARGS",
+        help=(
+            "This should be a quoted string that is passed directly "
+            "through to pytest"
+        ),
+    )
+
+
     subparsers = parser.add_subparsers(
         dest="subparser",
         title="subcommands",
-        description="valid subcommands (one required)",
+        description="(one required, individual help available for each)",
     )
     # CLI group for running tests in a container
     container = subparsers.add_parser(
@@ -176,10 +226,11 @@ def parse_user_args():
         ),
     )
     examples = subparsers.add_parser("examples", help=("Show usage examples"))
-    examples.add_argument('--explain',
+    examples.add_argument(
+        "--explain",
         action="store_true",
         help="Include a verbose explanation along with the examples",
-     )
+    )
 
     args = parser.parse_args()
     if args.help:
@@ -191,33 +242,22 @@ def parse_user_args():
                 f"You must specify a subcommand (one of {list(subparsers.choices.keys())})"
             )
         )
+
+    # verbosity breaks exception hook so check not used together
+    if args.debug and args.verbose:
+        raise ValueError("If you wish to use debugging, turn off verbosity.")
+
+
+    # Make sure manual option and pytest help options were not both used
+    for group in parser._action_groups:
+        if group.title == PYTEST_GROUP_HELP:
+            defaults = [x.default for x in group._group_actions]
+            pytest_vals =[getattr(args,a.dest,None) for a in group._group_actions]
+            pytest_args_passed = defaults != pytest_vals
+        elif group.title == PYTEST_MANUAL_HELP:
+            pytest_manual_arg_passed = bool(getattr(args,group._group_actions[0].dest))
+
+    if pytest_args_passed and pytest_manual_arg_passed:
+        raise ValueError("Use pytest execution modifiers or manual pytest management, not both")
+
     return args
-
-
-def dir_path(string):
-    dir_in = Path(string).expanduser()
-    if dir_in.exists():
-        return str(dir_in)
-    else:
-        raise NotADirectoryError(string)
-
-
-def make_dir_args_absolute(args_dict):
-    for k in ["abin", "build_dir"]:
-        if k in args_dict:
-            args_dict[k] = str(Path(args_dict[k]).expanduser().absolute())
-
-
-def needs_reduced_dependencies():
-    if any(x in sys.argv for x in ["-h", "-help", "--help"]):
-        return True
-
-    subparser_patterns = ["examples", "container"]
-    if any(x in sys.argv for x in subparser_patterns):
-        # Not sure if this is the sub parser so need to parse the
-        # arguments to check
-        parsed = parse_user_args()
-        if parsed.subparser in subparser_patterns:
-            return True
-
-    return False

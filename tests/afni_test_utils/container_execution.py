@@ -2,10 +2,8 @@ from pathlib import Path
 import os
 import subprocess as sp
 import docker
-import logging
 
 VALID_MOUNT_MODES = "host test-code test-data-only".split()
-logger = logging.Logger("afni_test_utils")
 
 
 def run_containerized(tests_dir, **kwargs):
@@ -260,10 +258,16 @@ def unparse_args_for_container(**kwargs):
             cmd += " --build-dir=/opt/afni/build"
         elif k == "extra_args":
             cmd += f' --extra-args="{v}"'
+        elif k == "filter_expr":
+            cmd += f' -k="{v}"'
+        elif k == "verbose":
+            cmd += f" -{v * 'v'}"
         elif v is True:
             cmd += f" --{k.replace('_','-')}"
         else:
-            raise NotImplementedError
+            raise NotImplementedError(
+                f"Behavior for passing {k,v} to container is undefined"
+                )
     cmd += " local"
     return cmd
 

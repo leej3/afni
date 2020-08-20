@@ -2,6 +2,7 @@ import sys
 import os
 import subprocess
 import datalad.api as datalad
+import logging
 
 from afni_test_utils.functions_for_ci_tests import (
     get_test_cmd_args,
@@ -36,5 +37,6 @@ def run_tests(tests_dir, **args_dict):
     else:
         cmd = f"""pytest {' '.join(x for x in cmd_args)}"""
 
+    print(f"Executing: {cmd}")
     res = subprocess.run(cmd, shell=True)
     sys.exit(res.returncode)

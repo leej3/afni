@@ -5,7 +5,6 @@ examples = {
     "specifying the installation directory": "run_afni_tests.py --abin=~/abin local",
     "help for pytest": "run_afni_tests.py --extra-args='--help' local",
     "altering behavior of pytest": "run_afni_tests.py --extra-args='-k mask' local",
-    "most basic example for container": "run_afni_tests.py container",
     "making use of cmake": "\n    ".join(
         ["mkdir /tmp/build", "run_afni_tests.py --build-dir=/tmp/build local",]
     ),
@@ -15,9 +14,9 @@ examples = {
     "execute tests by pattern": "run_afni_tests.py --extra-args='-k mask' local",
     "execute tests by pattern shortcut": "run_afni_tests.py -k mask local",
     "execute tests by previous failure": "run_afni_tests.py --extra-args='--lf' local",
-    "specifying pytest args without this tools defaults": "run_afni_tests.py --overwrite-args='--verbose' local",
-    "show shell commands": "run_afni_tests.py --extra-args='-s' local",
+    "specifying pytest args without run_afni_tests.py defaults": "run_afni_tests.py --overwrite-args='--verbose' local",
     "be verbose": "run_afni_tests.py -v local",
+    "be especially verbose": "run_afni_tests.py -vvvv local",
     "use debugger": "run_afni_tests.py --debug local",
     "most basic example for container": "run_afni_tests.py container",
     "examples with explanation ": "run_afni_tests.py examples --explain",
@@ -134,22 +133,35 @@ Another nice trick worth knowing, is that you can re-execute all failed tests fr
     {examples['execute tests by previous failure']}
 
 
+Manually specifying pytest arguments ~2~
+
+You can drop all behavior that is enforced by run_afni_tests.py and specify
+your own pytest options:
+
+    {examples['specifying pytest args without run_afni_tests.py defaults']}
+
+
 Modifying the reporting of a tests run ~1~
 
-By default a number of flags are passed to pytest to supress most python
-output and instead to focus on the commands executed and their failure status.
-You can modify this behavior slighlty by using the --extra-args option as
-described previously; however, at some point you may wish to more carefully
-define this output yourself. At this point your will likely want to use the
---overwrite-args option. This will pass your arguments through to pytest
-without the usual defaults.
+Altering test reporting verbosity ~2~
 
-    {examples['specifying pytest args without this tools defaults']}
+Verbosity at the terminal can be altered as described below but remember that
+for any given test the stdout, stderr, as well as the context for the executed
+are all recorded in the captured_output subdirectory for each test.
+
+You can alter the verbosity of the test output:
+
+    {examples['be verbose']}
+
+This can be increased a few levels of verbosity:
+
+    {examples['be especially verbose']}
+
 
 Debugging failing tests ~1~
 
 Using more verbose options can provide shell commands that can be executed
-outside of the test infrastructure for inspection of the failure. Be careful
+outside of the test infrastructure for inspection of the failure but be careful
 about pre-existing paths! Additionally it is worth noting that there are some
 python debugging tools that can help. For example the --debug option will drop
 you into a pdb console (python debugger console) at the failure giving you
@@ -162,6 +174,7 @@ wrong and where:
 The above command makes use of the --pdb pytest option under the hood. --trace
 will allow you to step line by line through tests. It might be useful for your
 purposes...
+
 
 Performing testing in a container: ~1~
 

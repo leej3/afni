@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import logging
 import subprocess as sp
 import warnings
 
@@ -8,6 +9,9 @@ with warnings.catch_warnings():
     import datalad.api as datalad
 
 from afni_test_utils import container_execution
+
+
+logger = logging.getLogger("afni_test_utils")
 
 
 def check_git_config():
@@ -28,7 +32,7 @@ def check_test_data_repo(test_data, ignore_dirty_data):
         test_data.repo.update_submodule(test_data.path)
     else:
         if test_data.repo.dirty and not ignore_dirty_data:
-            print("checking if test data repo is dirty")
+            logger.info("checking if test data repo is dirty")
             raise ValueError(
                 "The test data is in a dirty state. You should commit any changes, clean the repository, or run tests with the ignore-dirty-data flag"
             )
@@ -84,7 +88,7 @@ def configure_for_coverage(cmd_args, **kwargs):
         # appropriate build flags to enable coverage.
         if not (kwargs.get("build_dir") or kwargs.get("reuse_build")):
             raise ValueError(
-                "If you want to test coverage, use the --build-dir or --reuse-build options."
+                "If you want to test coverage, use the --build-dir option or the container subcommand with  --reuse-build."
             )
 
         # check that the pytest-cov plugin is installed
@@ -103,16 +107,27 @@ def configure_for_coverage(cmd_args, **kwargs):
 
 
 def get_test_cmd_args(**kwargs):
+    if kwargs.get('overwrite_args') is not None:
+        cmd_args = kwargs['overwrite_args'].split()
+        return cmd_args
 
     if kwargs.get("file"):
         cmd_args = [kwargs["file"]]
     else:
         cmd_args = ["scripts"]
 
-    cmd_args += "-r=Exs  --show-capture=no --tb=no --verbose -s".split()
+    if not kwargs.get('verbose'):
+        verb_args = '--tb=no --no-summary --show-capture=no'
+    elif kwargs.get('verbose') == 1:
+        verb_args = '--tb=no --no-summary -v --log-cli-level=INFO'
+    elif kwargs.get('verbose') == 2:
+        verb_args = '--tb=short -r Exs -v --log-cli-level=INFO'
+    elif kwargs.get('verbose') == 3:
+        verb_args = '--tb=auto -r Exs -v --log-cli-level=INFO --showlocals  -s'
+    elif kwargs.get('verbose') > 3:
+        verb_args = '--tb=long -r Exs -v --log-cli-level=DEBUG --showlocals -s'
 
-    if kwargs.get("verbose"):
-        cmd_args += " -vv --showlocals -r Esx".split()
+    cmd_args += verb_args.split()
 
     if kwargs.get("debug"):
         cmd_args.append("--pdb")
@@ -120,8 +135,13 @@ def get_test_cmd_args(**kwargs):
     if kwargs.get("filter_expr"):
         cmd_args.append(f"-k={kwargs['filter_expr']}")
 
-    cmd_args += (kwargs.get("extra_args") or "").split()
+    if kwargs.get("log_file_level"):
+        cmd_args.append(f"--log-file-level={kwargs['log_file_level']}")
 
+    if kwargs.get("lf"):
+        cmd_args.append("--lf")
+
+    cmd_args += (kwargs.get("extra_args") or "").split()
     return cmd_args
 
 

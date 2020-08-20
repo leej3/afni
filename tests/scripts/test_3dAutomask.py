@@ -15,3 +15,4 @@ def test_3dAutomask_basic(data):
     # Run command and test all outputs match
     differ = tools.OutputDiffer(data, cmd)
     differ.run()
+    assert False
