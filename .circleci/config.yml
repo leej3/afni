@@ -68,11 +68,13 @@ commands:
           command: |
             TEST_ARGS=''
             if [ "$AFNI_WITH_COVERAGE" != "0" ];then
-              TEST_ARGS="$TEST_ARGS --coverage container --source-mode=test-data-only --reuse-build"
+              TEST_ARGS="$TEST_ARGS --coverage container --reuse-build"
             else
-              TEST_ARGS="$TEST_ARGS --verbose container --source-mode=test-data-only"
+              TEST_ARGS="$TEST_ARGS -vvv container"
             fi
+            TEST_ARGS="$TEST_ARGS --image-name=afni/afni_<< parameters.build_type >> --source-mode=test-data-only "
 
+            echo $TEST_ARGS
             /tmp/src/afni/tests/run_afni_tests.py $TEST_ARGS
 
 

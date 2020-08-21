@@ -21,7 +21,7 @@ setup(name='afni-test-utils',
       author_email='johnleenimh+afni_dev@gmail.com',
       license='Public Domain',
       package_dir={'afni_test_utils':''},
-      scripts=["run_afni_tests.py"],
+      # scripts=["run_afni_tests.py"],
       packages=find_packages(),
       zip_safe=False
       )

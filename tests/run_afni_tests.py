@@ -1,53 +1,80 @@
 #!/usr/bin/env python3
+# This script is convoluted in an attempt to:
+# a) provide help/examples without dependencies
+# b) correctly execute tests in a container with minimal dependencies outside
+#    the container
+# c) provide informative errors outside of these circumstances for beginners
+#    to the python world
+# If it fails in the above, refactoring the code to a more traditional pattern
+# would be desirable.
 import os
 import sys
 from pathlib import Path
+import importlib
 
-from afni_test_utils.container_execution import run_containerized
+try:
+    minfunc = importlib.import_module(
+        'afni_test_utils.minimal_funcs_for_run_tests_cli',
+     )
+except Exception as err:
+    print(err)
+    raise ImportError(
+        f"If you are having issues importing you may want to "
+        "confirm you have installed the required dependencies and, if "
+        "you are using a tool that manages environments, that you have "
+        "the appropriate environment. For installation consider installing miniconda and running "
+        "the following from the tests directory in the afni repository:\n"
+        "conda env create -f environment.yml   \n\n Additionally, if not using "
+        "the cmake build, you should use the --abin option"
+    )
 from afni_test_utils.exceptionhook import setup_exceptionhook
 from afni_test_utils.run_tests_examples import EXAMPLES, examples
-from afni_test_utils.minimal_funcs_for_run_tests_cli import (
-    make_dir_args_absolute,
-    needs_reduced_dependencies,
-    parse_user_args,
-)
 
+# Examples and help should only need python3
 # When using container dependencies should be minimal: docker, docker-py, python3.
 # This section does a conditional import for when local dependencies should be
 # installed. For situations in which help is requested or the dependencies
 # should be containerized this section is skipped.
-reduced_deps = needs_reduced_dependencies()
+dep_reqs = minfunc.get_dependency_requirements()
 
-if not reduced_deps and "local" in sys.argv:
-    from afni_test_utils.run_tests_func import run_tests
 
-    # This script should be able to import from afnipy, otherwise something is
-    # wrong. Passing in an installation directory is an exception to this...
-    # This could be enhanced to confirm that the correct afnipy is used.
-    valid_without_afnipy = ["--abin", "container"]
-    if not any(pat in " ".join(sys.argv) for pat in valid_without_afnipy):
-        try:
-            import afnipy
-        except ImportError:
-            err_txt = (
-                "Tried and failed to import from afnipy. To solve this "
-                "either install afnipy: \npip install "
-                "afni/src/python_scripts\n or define the installation "
-                "directory using the --abin flag. "
+if dep_reqs != 'minimal':
+    if dep_reqs == 'container_execution':
+        from afni_test_utils.container_execution import run_containerized
+    else:
+        from afni_test_utils.run_tests_func import run_tests
+        # This script should be able to import from afnipy, otherwise something is
+        # wrong. Passing in an installation directory is an exception to this...
+        # This could be enhanced to confirm that the correct afnipy is used.
+        afnipy_err = (
+            "Tried and failed to import from afnipy. To solve this you "
+            "can:\na install afnipy: \n\tpip install "
+            "afni/src/python_scripts\nb) define AFNI's installation "
+            "directory using the --abin flag"
+            # c) set the env variable PYTHONPATH to the binary directory. "
             )
 
-            sys.exit(ImportError(err_txt))
+        if "--abin" not in sys.argv:
+            if os.environ.get('PYTHONPATH'):
+                raise ValueError(
+                    "Using PYTHONPATH is not supported. Unset this --abin or install "
+                    "afnipy into your current python interpretter. "
+                    )
+            try:
+                import afnipy
+            except ImportError:
+                sys.exit(ImportError(afnipy_err))
 
 
 def main(user_args=None):
 
     # parse user args:
     if not user_args:
-        user_args = parse_user_args()
+        user_args = minfunc.parse_user_args()
 
     args_dict = {k: v for k, v in vars(user_args).items() if v is not None}
 
-    make_dir_args_absolute(args_dict)
+    minfunc.make_dir_args_absolute(args_dict)
 
     # Everything should be run from within the tests directory of the afni
     # source repository
@@ -63,7 +90,7 @@ def main(user_args=None):
         if args_dict.get("explain"):
             print(EXAMPLES)
         else:
-            print("\n".join(f"{k}:\n\t {v}" for k, v in examples.items()))
+            print("\n".join(f"{k}:\n    {v}" for k, v in examples.items()))
         sys.exit(0)
     else:
         run_tests(tests_dir, **args_dict)

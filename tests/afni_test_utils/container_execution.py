@@ -3,7 +3,10 @@ import os
 import subprocess as sp
 import docker
 
-VALID_MOUNT_MODES = "host test-code test-data-only".split()
+from afni_test_utils.minimal_funcs_for_run_tests_cli import (
+    VALID_MOUNT_MODES,
+    check_build_directory,
+    )
 
 
 def run_containerized(tests_dir, **kwargs):
@@ -272,28 +275,3 @@ def unparse_args_for_container(**kwargs):
     return cmd
 
 
-def check_build_directory(build_dir, within_container=False):
-    if build_dir:
-        cache_file = Path(build_dir, "CMakeCache.txt")
-        if not os.listdir(build_dir):
-            # empty directory
-            return
-        if not cache_file.exists():
-            raise ValueError(
-                "The build appears to have contents but not that of a "
-                "previously successful build "
-            )
-
-        cache_info = cache_file.read_text()[:500]
-        err_txt = (
-            "It appears that you are trying to use a build directory "
-            "that was created in a different context. Consider using an "
-            "empty directory instead. "
-        )
-
-        if within_container:
-            if not "For build in directory: /opt/afni/build" in cache_info:
-                raise ValueError(err_txt)
-        else:
-            if not f"For build in directory: {build_dir}" in cache_info:
-                raise ValueError(err_txt)

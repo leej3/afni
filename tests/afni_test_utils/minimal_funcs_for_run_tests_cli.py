@@ -1,12 +1,13 @@
 import subprocess
 import argparse
+import os
 import sys
-from afni_test_utils.container_execution import VALID_MOUNT_MODES
 from pathlib import Path
 from itertools import compress
 
 PYTEST_GROUP_HELP = "pytest execution modifiers"
 PYTEST_MANUAL_HELP = "Manual pytest management (conflicts with pytest execution modifiers)"
+VALID_MOUNT_MODES = "host test-code test-data-only".split()
 
 def dir_path(string):
     dir_in = Path(string).expanduser()
@@ -20,21 +21,6 @@ def make_dir_args_absolute(args_dict):
     for k in ["abin", "build_dir"]:
         if k in args_dict:
             args_dict[k] = str(Path(args_dict[k]).expanduser().absolute())
-
-
-def needs_reduced_dependencies():
-    if any(x in sys.argv for x in ["-h", "-help", "--help"]):
-        return True
-
-    subparser_patterns = ["examples", "container"]
-    if any(x in sys.argv for x in subparser_patterns):
-        # Not sure if this is the sub parser so need to parse the
-        # arguments to check
-        parsed = parse_user_args()
-        if parsed.subparser in subparser_patterns:
-            return True
-
-    return False
 
 
 def parse_user_args():
@@ -261,3 +247,47 @@ def parse_user_args():
         raise ValueError("Use pytest execution modifiers or manual pytest management, not both")
 
     return args
+
+def check_build_directory(build_dir, within_container=False):
+    if build_dir:
+        cache_file = Path(build_dir, "CMakeCache.txt")
+        if not os.listdir(build_dir):
+            # empty directory
+            return
+        if not cache_file.exists():
+            raise ValueError(
+                "The build appears to have contents but not that of a "
+                "previously successful build "
+            )
+
+        cache_info = cache_file.read_text()[:500]
+        err_txt = (
+            "It appears that you are trying to use a build directory "
+            "that was created in a different context. Consider using an "
+            "empty directory instead. "
+        )
+
+        if within_container:
+            if not "For build in directory: /opt/afni/build" in cache_info:
+                raise ValueError(err_txt)
+        else:
+            if not f"For build in directory: {build_dir}" in cache_info:
+                raise ValueError(err_txt)
+
+
+def get_dependency_requirements():
+
+    if any(x in sys.argv for x in ["-h", "-help", "--help"]):
+        return 'minimal'
+
+    subparser_patterns = ["container","examples"]
+    if any(x in sys.argv for x in subparser_patterns):
+        # Not sure if this is the sub parser so need to parse the
+        # arguments to check
+        parsed = parse_user_args()
+        if parsed.subparser == 'examples':
+            return 'minimal'
+        if parsed.subparser == 'container':
+            return 'container_execution'
+
+    return 'full'

@@ -2,6 +2,7 @@ from argparse import Namespace
 from collections import namedtuple
 from pathlib import Path
 from unittest.mock import MagicMock, patch, Mock
+import importlib
 import os
 import pytest
 import runpy
@@ -12,7 +13,7 @@ import subprocess as sp
 import sys
 import tempfile
 
-
+# import afni_test_utils as atu
 from afni_test_utils import run_tests_func
 from afni_test_utils import run_tests_examples
 from afni_test_utils import functions_for_ci_tests as ci_funcs
@@ -20,59 +21,181 @@ from afni_test_utils import container_execution as ce
 
 
 TESTS_DIR = Path(__file__).parent.parent
-SCRIPT = Path(shutil.which("run_afni_tests.py"))
+SCRIPT = TESTS_DIR.joinpath("run_afni_tests.py")
+# The default args to pytest will likely change with updates
+DEFAULT_ARGS = 'scripts --tb=no --no-summary --show-capture=no'
+PYTEST_COV_FLAGS = '--cov=targets_built --cov-report xml:$PWD/coverage.xml'
+
+
+RETCODE_0 = MagicMock()
+RETCODE_0.returncode = 0
+
+def run_script_and_check_imports(SCRIPT,argslist, expected,not_expected,sys_exit=True):
+    """
+    This is very hacky. It is testing something hacky though. The overall goal
+    is to try to only import dependencies of the core testing script as
+    needed. In order for that behavior to be robust it must be tested here.
+
+    I tried runpy as a way to execute the script but it didn't work (it was
+    modifying sys.argv in a way I could not decipher).
+
+    So the solution here is to temporarily modify sys.path/PATH and mock
+    sys.argv  so that the run_afni_tests.py script is importable and the
+    appropriate driving "user args" are defined during the import.
+    Subsequently we check if the appropriate imports have occurred.
+    """
+    _environ = dict(os.environ)  # or os.environ.copy()
+    syspath = sys.path.copy()
+    sysmodules = sys.modules.copy()
+    modname = SCRIPT.stem
+    try:
+        sys.path.insert(0,str(SCRIPT.parent))
+        os.environ['PATH'] = f"{SCRIPT.parent}:{os.environ['PATH']}"
+        with patch.object(sys, 'argv',[SCRIPT.name,*argslist]) as mocked_argv:
+            if SCRIPT.stem in sys.modules:
+                script = importlib.reload(sys.modules[SCRIPT.stem])
+            else:
+                script = importlib.import_module(SCRIPT.stem)
+
+            for func_or_mod in not_expected:
+                assert not getattr(script,func_or_mod,None)
+            for func_or_mod in expected:
+                assert getattr(script,func_or_mod,None)
+            if sys_exit:
+                with pytest.raises(SystemExit) as err:
+                    script.main()
+                assert err.typename == "SystemExit"
+                assert err.value.code == 0
+            else:
+                script.main()
+    finally:
+        os.environ.clear()
+        os.environ.update(_environ)
+        sys.path = syspath
+        sys.modules = sysmodules
+
+
+# @patch("afni_test_utils.container_execution.docker")
+# def test_run_containerized(mocked_docker):
+#     container = Mock()
+#     container.logs.return_value = [b"success"]
+#     client = Mock()
+#     client.images.search.return_value = True
+#     client.containers.run.return_value = container
+#     mocked_docker.from_env.return_value = client
+#     assert False
+#     # Calling with coverage=True should result in --coverage being in the
+#     # docker run call
+#     ce.run_containerized(
+#         TESTS_DIR,
+#         **{
+#             "image_name": "afni/afni_cmake_build",
+#             "only_use_local": True,
+#             "coverage": True,
+#         },
+#     )
+#     run_calls = client.containers.run.call_args_list
+#     assert "--coverage" in run_calls[0][0][1]
+
+
+# @patch("afni_test_utils.container_execution.docker")
+# def test_run_containerized_fails_with_unknown_image(mocked_docker):
+#     container = Mock()
+#     container.logs.return_value = [b"success"]
+#     client = Mock()
+#     client.images.search.side_effect = ValueError()
+#     mocked_docker.from_env.return_value = client
+
+#     # The image needs to exist locally with only_use_local
+#     with pytest.raises(ValueError):
+#         afni_test_utils.container_execution.run_containerized(
+#             TESTS_DIR, **{"image_name": "unknown_image", "only_use_local": True,}
+#         )
 
 
 
+@pytest.mark.parametrize(
+    "help_option",
+    [
+        *"-h --help -help examples".split(),
+    ]
+)
+def test_run_tests_help_works(help_option):
+    """
+    Various calls of run_afni_tests.py should have no dependencies to
+    correctly execute: basically help can be displayed without dependencies
+    installed
+    """
+    not_expected = "datalad docker pytest afnipy run_tests".split()
+    expected = ""
+    argslist = [help_option]
+    run_script_and_check_imports(SCRIPT,argslist,expected,not_expected)
 
+
+@pytest.mark.parametrize(
+    "argslist",
+    [
+        ["local"],
+        f"--abin {tempfile.mkdtemp()} local".split(),
+    ]
+)
+@patch("afni_test_utils.run_tests_func.run_tests")
+def test_run_tests_local_subparsers_works(mocked_run_tests,argslist):
+    # TODO parametrize the expected/not expected for more precision
+    not_expected = "docker".split()
+    expected = ""
+    run_script_and_check_imports(SCRIPT,argslist,expected,not_expected,sys_exit=False)
+
+
+@pytest.mark.parametrize(
+    "argslist",
+    [
+        "container --source-mode=host".split(),
+        ["container"],
+    ]
+)
+@patch("afni_test_utils.container_execution.run_containerized")
+def test_run_tests_container_subparsers_works(mocked_run_containerize,argslist):
+    mocked_run_containerized = RETCODE_0
+    not_expected = "datalad docker pytest afnipy run_tests".split()
+    expected = ""
+    run_script_and_check_imports(SCRIPT,argslist,expected,not_expected,sys_exit=False)
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {
+            'test_case': 'default',
+            'args_in': {},
+            'expected_call_template':'pytest {DEFAULT_ARGS}'
+        },
+        {
+            'test_case': 'with_coverage',
+            'args_in': {"coverage": True, "build_dir": tempfile.mkdtemp()},
+            'expected_call_template':(
+                "cd {params['args_in']['build_dir']};"
+                "cmake -GNinja {TESTS_DIR.parent};"
+                "ARGS='{DEFAULT_ARGS} {PYTEST_COV_FLAGS}' "
+                "ninja pytest"
+            )
+        },
+    ]
+)
 @patch("afni_test_utils.run_tests_func.subprocess")
-def test_run_tests(mocked_sp):
-    run_mock = MagicMock()
-    run_mock.returncode = 0
-    mocked_sp.run.return_value = run_mock
-    args_in = {}
+def test_run_tests(mocked_sp,params):
+    template = params['expected_call_template']
+    # All substituted variables should be defined in this scope
+    expected_call = eval(f'f"""{template}"""')
+
+    mocked_sp.run.return_value = RETCODE_0
     with pytest.raises(SystemExit) as err:
-        run_tests_func.run_tests(TESTS_DIR, **args_in)
+        run_tests_func.run_tests(TESTS_DIR, **params['args_in'])
     assert err.typename == "SystemExit"
     assert err.value.code == 0
-    default_cmd = 'pytest scripts -r=Exs --show-capture=no --tb=no --verbose -s'
-    mocked_sp.run.assert_called_with(default_cmd, shell=True)
-
-    tmpdir = tempfile.mkdtemp()
-    args_in = {"coverage": True, "build_dir": tmpdir}
-    with pytest.raises(SystemExit) as err:
-        run_tests_func.run_tests(TESTS_DIR, **args_in)
-    assert err.typename == "SystemExit"
-    assert err.value.code == 0
-
-    expected_call = (
-        f"cd {tmpdir};cmake -GNinja {TESTS_DIR.parent};ARGS='scripts "
-        "-r=Exs --show-capture=no --tb=no --verbose -s "
-        "--cov=targets_built --cov-report xml:$PWD/coverage.xml' ninja "
-        "pytest"
-        )
+    mocked_sp.run.assert_called_with(expected_call, shell=True)
 
 
-
-
-    run_calls = mocked_sp.run.assert_called_with(expected_call, shell=True,)
-
-
-def test_run_tests_help_works():
-    res = runpy.run_path(str(SCRIPT))
-
-    for help_arg in "-h --help -help examples".split():
-        res["sys"].argv = [SCRIPT.name, help_arg]
-        with pytest.raises(SystemExit) as err:
-            # Run main function while redirecting to /dev/null
-            stdout_ = sys.stdout  # Keep track of the previous value.
-            sys.stdout = open(os.devnull, "w")
-            res["main"]()
-            sys.stdout = stdout_  # restore the previous stdout.
-        assert err.typename == "SystemExit"
-        assert err.value.code == 0
-        for dep in "datalad pytest afnipy run_tests".split():
-            assert dep not in res
 
 
 @patch("afni_test_utils.minimal_funcs_for_run_tests_cli.dir_path")
@@ -250,8 +373,7 @@ def test_configure_for_coverage():
         out_args = ci_funcs.configure_for_coverage(
             cmd_args, coverage=True, build_dir="something"
         )
-        cov_args = ["--cov=targets_built", "--cov-report", "xml:$PWD/coverage.xml"]
-        assert all(x in out_args for x in cov_args)
+        assert all(x in out_args for x in PYTEST_COV_FLAGS.split())
         assert (
             os.environ.get("CXXFLAGS")
             == "-g -O0 -Wall -W -Wshadow -Wunused-variable -Wunused-parameter -Wunused-function -Wunused -Wno-system-headers -Wno-deprecated -Woverloaded-virtual -Wwrite-strings -fprofile-arcs -ftest-coverage"
@@ -334,44 +456,6 @@ def test_unparse_args_for_container():
 
     converted = ce.unparse_args_for_container(**user_args)
     assert "--build-dir=/opt/afni/build" in converted
-
-
-@patch("afni_test_utils.container_execution.docker")
-def test_run_containerized(mocked_docker):
-    container = Mock()
-    container.logs.return_value = [b"success"]
-    client = Mock()
-    client.images.search.return_value = True
-    client.containers.run.return_value = container
-    mocked_docker.from_env.return_value = client
-
-    # Calling with coverage=True should result in --coverage being in the
-    # docker run call
-    ce.run_containerized(
-        TESTS_DIR,
-        **{
-            "image_name": "afni/afni_cmake_build",
-            "only_use_local": True,
-            "coverage": True,
-        },
-    )
-    run_calls = client.containers.run.call_args_list
-    assert "--coverage" in run_calls[0][0][1]
-
-
-@patch("afni_test_utils.container_execution.docker")
-def test_run_containerized_fails_with_unknown_image(mocked_docker):
-    container = Mock()
-    container.logs.return_value = [b"success"]
-    client = Mock()
-    client.images.search.side_effect = ValueError()
-    mocked_docker.from_env.return_value = client
-
-    # The image needs to exist locally with only_use_local
-    with pytest.raises(ValueError):
-        ce.run_containerized(
-            TESTS_DIR, **{"image_name": "unknown_image", "only_use_local": True,}
-        )
 
 
 def test_setup_docker_env_and_vol_settings():

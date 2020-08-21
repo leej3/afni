@@ -8,7 +8,7 @@ with warnings.catch_warnings():
     warnings.filterwarnings("ignore")
     import datalad.api as datalad
 
-from afni_test_utils import container_execution
+from afni_test_utils.minimal_funcs_for_run_tests_cli import check_build_directory
 
 
 logger = logging.getLogger("afni_test_utils")
@@ -150,7 +150,7 @@ def generate_cmake_command_as_required(tests_dir, args_dict):
     When a build dir has been defined, check whether is empty or sensibly
     populated. Return a command for both situations
     """
-    container_execution.check_build_directory(args_dict["build_dir"])
+    check_build_directory(args_dict["build_dir"])
     cmd = f"cd {args_dict['build_dir']}"
     if not os.listdir(args_dict["build_dir"]):
         cmd += f";cmake -GNinja {tests_dir.parent}"
