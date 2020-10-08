@@ -15,7 +15,7 @@ import shlex
 
 from multiprocessing import Lock, Process
 
-lock = Lock()
+dl_lock = Lock()
 
 
 def is_omp(toolname):
@@ -166,7 +166,7 @@ def add_partner_files(test_data_dir, path_in):
     return files_out
 
 
-def process_path_obj(path_obj, test_data_dir):
+def process_path_obj(path_obj, test_data_dir, logger=None):
     """
     This function is used to process paths that have been defined in the
     data_paths dictionary of test modules. Globs are resolved, and the data is
@@ -194,9 +194,21 @@ def process_path_obj(path_obj, test_data_dir):
 
     # Fetching the data
     if needs_fetching:
-        # fetch data with a global lock
-        try_data_download(files_to_fetch, test_data_dir)
-
+        attempt_count = 0
+        while attempt_count < 2:
+            # fetch data with a global dl_lock
+            fetch_status = try_data_download(files_to_fetch, test_data_dir, logger)
+            if fetch_status:
+                break
+            else:
+                attempt_count += 1
+        else:
+            # datalad download attempts failed
+            pytest.exit(
+                f"Datalad download failed {attempt_count} times, you may "
+                "not be connected to the internet "
+            )
+    logger.info(f"Downloaded data for {test_data_dir}")
     path_obj = [test_data_dir / p for p in path_obj]
     if len(path_obj) == 1:
         return path_obj[0]
@@ -204,43 +216,42 @@ def process_path_obj(path_obj, test_data_dir):
         return path_obj
 
 
-def try_data_download(file_fetch_list, test_data_dir):
-    global lock
-    dl_dset = datalad.Dataset(str(test_data_dir))
-    attempt_count = 0
-    lock.acquire()
-    while attempt_count < 2:
-        try:
-            # Fetching the data
-            process_for_fetching_data = Process(
-                target=dl_dset.get, kwargs={"path": [str(p) for p in file_fetch_list]}
-            )
+def try_data_download(file_fetch_list, test_data_dir, logger):
+    global dl_lock
+    dl_lock.acquire()
+    try:
+        dl_dset = datalad.Dataset(str(test_data_dir))
+        # Fetching the data
+        process_for_fetching_data = Process(
+            target=dl_dset.get, kwargs={"path": [str(p) for p in file_fetch_list]}
+        )
 
-            # attempts should be timed-out to deal with of unpredictable stalls.
-            process_for_fetching_data.start()
-            process_for_fetching_data.join(timeout=30)
-            if process_for_fetching_data.is_alive():
-                # terminate the process.
-                process_for_fetching_data.terminate()
-                raise IncompleteResultsError(
-                    f"Data fetching timed out for {file_fetch_list}"
-                )
-            elif process_for_fetching_data.exitcode != 0:
-                raise ValueError(f"Data fetching failed for {file_fetch_list}")
-            else:
-                lock.release()
-                return
-        except (IncompleteResultsError, CommandError) as e:
-            # Try another loop
-            attempt_count += 1
-            # make sure datalad repo wasn't updated to git annex version 8. Not sure why this is happening
-            git_config_file = Path(test_data_dir) / ".git" / "config"
-            git_config_file.write_text(
-                git_config_file.read_text().replace("version = 8", "version = 7")
-            )
-            continue
+        # attempts should be timed-out to deal with unpredictable stalls.
+        process_for_fetching_data.start()
+        # logger.debug(f"Fetching data for {test_data_dir}")
+        process_for_fetching_data.join(timeout=60)
+        if process_for_fetching_data.is_alive():
+            # terminate the process.
+            process_for_fetching_data.terminate()
+            # logger.warn(f"Data fetching timed out for {file_fetch_list}")
+            return False
+        elif process_for_fetching_data.exitcode != 0:
+            # logger.warn(f"Data fetching failed for {file_fetch_list}")
+            return False
+        else:
+            return True
+    except (IncompleteResultsError, ValueError, CommandError) as err:
+        logger.warn(
+            f"Datalad download failure ({type(err)}) for {test_data_dir}. Will try again"
+        )
 
-    # datalad download attempts failed
-    pytest.exit(
-        "Datalad download failed 5 times, you may not be connected to the internet"
-    )
+        return False
+
+    finally:
+        # make sure datalad repo wasn't updated to git annex version 8. Not sure why this is happening
+        git_config_file = Path(test_data_dir) / ".git" / "config"
+        git_config_file.write_text(
+            git_config_file.read_text().replace("version = 8", "version = 7")
+        )
+        dl_lock.release()
+        sleep(random.randint(1, 10))

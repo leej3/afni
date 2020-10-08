@@ -179,6 +179,7 @@ def get_tests_data_dir(config_obj):
     """Get the path to the test data directory. If the test data directory
     does not exist or is not populated, install with datalad.
     """
+    logger = logging.getLogger("Test data setup")
     # Define hard-coded paths for now
     tests_data_dir = get_test_data_path(config_obj)
 
@@ -194,11 +195,12 @@ def get_tests_data_dir(config_obj):
             except FileNotFoundError:
                 # missing symlink, nothing to worry about
                 pass
-
+        logger.warn("Not sure about test data, removing...")
         shutil.rmtree(dl_dset.pathobj)
 
     # datalad is required and the datalad repository is used for data.
     if not (tests_data_dir / ".datalad").exists():
+        logger.warn("Installing test data")
         datalad.install(
             str(tests_data_dir),
             "https://github.com/afni/afni_ci_test_data.git",
@@ -229,6 +231,14 @@ def data(pytestconfig, request, output_dir, base_comparison_dir_path):
     test_name = get_current_test_name()
     tests_data_dir = get_test_data_path(pytestconfig)
 
+    # Add stream and file logging as requested
+    logger = logging.getLogger(test_name)
+    logger = tools.logger_config(
+        logger,
+        file=output_dir / "all_tests.log",
+        log_file_level=pytestconfig.getoption("--log-file-level"),
+    )
+
     # Set module specific values:
     try:
         data_paths = request.module.data_paths
@@ -236,7 +246,8 @@ def data(pytestconfig, request, output_dir, base_comparison_dir_path):
         data_paths = {}
     # start creating output dict, downloading test data as required
     out_dict = {
-        k: misc.process_path_obj(v, tests_data_dir) for k, v in data_paths.items()
+        k: misc.process_path_obj(v, tests_data_dir, logger)
+        for k, v in data_paths.items()
     }
 
     current_test_module = Path(request.module.__file__)
@@ -244,14 +255,6 @@ def data(pytestconfig, request, output_dir, base_comparison_dir_path):
     test_logdir = module_outdir / get_current_test_name() / "captured_output"
     if not test_logdir.exists():
         os.makedirs(test_logdir, exist_ok=True)
-
-    # Add steam and file logging as requested
-    logger = logging.getLogger(test_name)
-    logger = tools.logger_config(
-        logger,
-        file=output_dir / "all_tests.log",
-        log_file_level=pytestconfig.getoption("--log-file-level"),
-    )
 
     # This will be created as required later
     sampdir = tools.convert_to_sample_dir_path(test_logdir.parent)

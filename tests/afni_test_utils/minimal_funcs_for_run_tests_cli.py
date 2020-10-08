@@ -491,8 +491,26 @@ def configure_parallelism(cmd_args, use_all_cores):
             shell=True,
         ).decode("utf-8")
         pytest_has_parallel = "pytest-parallel" in res
+        pytest_has_xdist = "pytest-xdist" in res
+
         if pytest_has_parallel:
+            # pytest sometimes hangs for an unknown reason at higher worker
+            # counts
             cmd_args += f" --workers {NCPUS}".split()
+        elif pytest_has_xdist:
+            logging = importlib.import_module("logging")
+            logger = logging.logger("Xdist warning")
+            logger.warn(
+                "Pytest-xdist uses separate processes. If data "
+                "downloading is required bad things happen because a "
+                "Lock object is used rather than using a file lock "
+                "which can work interprocess. Some GUI tests on Mac use "
+                "this too. You could just run the tests once in serial "
+                "though and then it would be mostly fine for parallel "
+                "execution... "
+            )
+
+            cmd_args += f" -n {NCPUS}".split()
         else:
             raise EnvironmentError(
                 "Parallel execution is requested. pytest-parallel "
