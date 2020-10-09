@@ -120,7 +120,7 @@ commands:
       image_cache_version:
         type: string
     steps:
-      - checkout
+      - checkout_afni
       - setup_remote_docker:
           version: 19.03.13
       - setup_dev_base_image:
@@ -157,7 +157,7 @@ commands:
               docker push afni/afni_<< parameters.build_type >>:$CIRCLE_TAG
             fi
       # Push dev_base image too though it is unlikely to change
-      - checkout
+      - checkout_afni
       - setup_dev_base_image:
           image_cache_version: << parameters.image_cache_version >>
       - run:
@@ -305,6 +305,17 @@ commands:
               docker images
             fi
 
+  checkout_afni:
+    description: "Get afni code"
+    steps:
+      - checkout
+      # useful for local debugging but fails on circleci
+      # - run: |
+      #     cd /tmp/src &&
+      #     git clone --shared   --verbose --depth 1 \
+      #       --local file:///tmp/_circleci_local_build_repo \
+      #       afni
+
 
 ############################################################################
 #Define jobs for building, testing, and deploying
@@ -320,7 +331,7 @@ jobs:
     docker:
       - image: afni/afni_circleci_executor
     steps:
-      - checkout
+      - checkout_afni
       - setup_remote_docker:
           version: 19.03.13
       - build_afni_image:
@@ -361,7 +372,7 @@ jobs:
     docker:
       - image: afni/afni_circleci_executor
     steps:
-      - checkout
+      - checkout_afni
       - setup_remote_docker:
           version: 19.03.13
       - write_test_data_cache_version_file:
@@ -401,7 +412,7 @@ jobs:
     macos:
         xcode: "11.2.1"
     steps: # a series of commands to run
-      - checkout
+      - checkout_afni
       - setup_macos_for_afni
       - run:
           name: Build on macos
@@ -433,7 +444,7 @@ jobs:
       - image: afni/afni_circleci_executor
     steps:
       - run: id # quick check to see who is running this!
-      - checkout
+      - checkout_afni
       - setup_remote_docker:
           version: 19.03.13
       - build_afni_image:
