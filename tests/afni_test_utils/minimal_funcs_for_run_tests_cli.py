@@ -322,16 +322,11 @@ def check_if_cmake_configure_required(build_dir, within_container=False):
         if not within_container:
             if not Path(build_dir).exists():
                 raise NotADirectoryError
-        # check the ownership
-        diruser = Path(build_dir).stat().st_uid
-        is_local_gid = diruser == os.getuid()
-        dirgroup = Path(build_dir).stat().st_gid
-        is_local_uid = dirgroup == os.getgid()
-        if not (is_local_uid or is_local_gid):
-            raise ValueError(
-                "The build directory is assumed to be "
-                "user writeable. The directory itself has ownership."
-                f"{diruser}:{dirgroup}"
+        # check dir is writeable
+        if not os.access(build_dir, os.W_OK | os.X_OK):
+            raise PermissionError(
+                f"The build directory {build_dir} is not writeable by "
+                f"the current user, {os.getuid} "
             )
 
         cache_filepath, cache_implied_dir = get_cache_path(build_dir)

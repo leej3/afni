@@ -1048,6 +1048,24 @@ def test_check_if_cmake_configure_required():
     minfuncs.check_if_cmake_configure_required(build_dir, within_container=True)
 
 
+def test_build_dir_not_writeable_error():
+    build_dir = Path(tempfile.mkdtemp(), "build_dir")
+    build_dir.mkdir()
+
+    # make sure that a directory that is not writeable raises the appropriate
+    # error
+    for i in range(1, 7):
+        try:
+            build_dir.chmod(i * 100)
+            (build_dir / f"test_{i}").touch()
+            print(f"writeable for {i * 100}")
+            minfuncs.check_if_cmake_configure_required(build_dir)
+        except PermissionError:
+            print(f"not writeable for {i * 100}")
+            with pytest.raises(PermissionError):
+                minfuncs.check_if_cmake_configure_required(build_dir)
+
+
 def test_wrong_build_dir_raise_file_not_found(monkeypatch):
     build_dir = "/opt/afni/build"
     mocked_path_instance = Mock()
