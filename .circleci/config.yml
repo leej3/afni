@@ -63,14 +63,14 @@ commands:
     steps:
       - run:
           name: Run tests
-          no_output_timeout: 30m
+          no_output_timeout: 60m
           command: |
             TEST_ARGS="$TEST_ARGS --extra-args='--runveryslow'"
             # Add coverage args as appropriate
             if [ "$AFNI_WITH_COVERAGE" != "0" ];then
-              TEST_ARGS="$TEST_ARGS --coverage -vvv container "
+              TEST_ARGS="$TEST_ARGS --coverage -vvv --u container "
             else
-              TEST_ARGS="$TEST_ARGS -vvv container"
+              TEST_ARGS="$TEST_ARGS -vvv --u container"
             fi
 
             tests_dir=tests/afni_ci_test_data
@@ -541,13 +541,16 @@ workflows:
               ignore: /.*/
 
       - coverage_check:
-          name: coverage_check
-              # cache version should match for all jobs
-              image_cache_version: ["0"]
           requires:
             - test_cmake_build
+            - test_make_build
+          matrix:
+            parameters:
+              # cache version should match for all jobs
+              image_cache_version: ["0"]
+              test_data_cache_version: ["5"]
           filters:
             tags:
               only: /AFNI_\d\d.\d.\d\d/
             branches:
-              ignore: /.*/
+              only: /.*/
