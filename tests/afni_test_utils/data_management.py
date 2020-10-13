@@ -48,7 +48,6 @@ def test_get_tests_data_dir(monkeypatch):
     get_tests_data_dir(config_obj)
     mocked_install.assert_called_once()
 
-    
 
 
 def get_tests_data_dir(config_obj):
@@ -56,7 +55,7 @@ def get_tests_data_dir(config_obj):
     does not exist or is not populated, install with datalad.
     """
     logger = logging.getLogger("Test data setup")
-    # Define hard-coded paths for now
+
     tests_data_dir = get_test_data_path(config_obj)
 
     # remote should be configured or something is badly amiss...
@@ -73,6 +72,12 @@ def get_tests_data_dir(config_obj):
                 pass
         logger.warn("Not sure about test data, removing...")
         shutil.rmtree(dl_dset.pathobj)
+
+    # Needs to be user writeable:
+    some_files = ['.git/logs/HEAD']
+    for f in some_files:
+        if not os.access(tests_data_dir / f, os.W_OK):
+            raise ValueError(f"{f} is not user writeable ({os.getuid()})")
 
     # datalad is required and the datalad repository is used for data.
     if not (tests_data_dir / ".datalad").exists():
