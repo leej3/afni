@@ -234,11 +234,10 @@ def setup_docker_env_and_vol_settings(tests_dir, **kwargs):
             }
         )
         # Add some uid specific configuration
-        if user_is_root():
-            docker_kwargs["environment"].update(
-                {"CHOWN_EXTRA": "/opt/afni/src/tests/afni_ci_test_data"}
-            )
-        else:
+        docker_kwargs["environment"].update(
+            {"CHOWN_EXTRA": "/opt/afni/src/tests/afni_ci_test_data"}
+        )
+        if not user_is_root():
             docker_kwargs["environment"].update(
                 {
                     "CHOWN_EXTRA": "/opt",
