@@ -68,8 +68,13 @@ def check_test_data_vol_usage(client, kwargs):
         if not any("test_data" == x.name for x in client.containers.list(all=True)):
             raise ValueError(
                 "Cannot find container called test-data, which is "
-                "required for --source-mode=test-data-volume "
-            )
+                "required for --source-mode=test-data-volume. Consider "
+                "starting it with something like the following: docker "
+                "create --user $id -u:$id -g -v "
+                "/opt/afni/src/tests/afni_ci_test_data --name test_data "
+                "alpine:3.4 /bin/true "
+                )
+
 
 
 def run_containerized(tests_dir, **kwargs):
