@@ -63,10 +63,11 @@ def mocked_script(monkeypatch):
 @pytest.fixture()
 def sp_with_successful_execution():
 
-    RUN_WITH_0 = Mock(
+    RUN_WITH_0 = MagicMock(
         **{
             "run.return_value": RETCODE_0,
             "check_output.return_value": b"",
+            "returncode": 0,
         }
     )
 
@@ -159,7 +160,7 @@ def test_execute_cmd_args(params):
     assert timed_out == params["expected_to_timeout"]
 
 
-def test_run_cmd(data, monkeypatch):
+def test_run_cmd_timeout(data, monkeypatch):
     data.logger = logging
     monkeypatch.setattr(logging, "warn", lambda x: None)
 
@@ -221,6 +222,42 @@ def test_command_logger_setup(data, monkeypatch):
     logger_out, cmd_log, stdout_log, stderr_log = tools.setup_logging(data, None)
     assert logger_out == logging
     assert all(p.parent == data.logdir for p in [cmd_log, stdout_log, stderr_log])
+
+
+def test_run_cmd_handles_unicode(data, monkeypatch, sp_with_successful_execution):
+    # not sure why but at one point Path().write_text() used the encoding
+    # scheme ascii when None was specified and so one would expect utf-8 to be
+    # used. A lesson for those not adding explicitly defining encoding.
+
+    mocked_write_text = Mock(spec=Path.write_text)
+
+    monkeypatch.setattr(afni_test_utils.tools.Path, "write_text", mocked_write_text)
+    monkeypatch.setattr(
+        afni_test_utils.tools,
+        "__execute_cmd_args",
+        Mock(return_value=(sp_with_successful_execution, Mock())),
+    )
+    # unicode in stdout should not cause any problems
+    tools.run_cmd(
+        data,
+        "echo An odd symbol: Δ (valid character though and so should be handled fine)",
+    )
+
+    # other ways of streaming unicode to stdout
+    tools.run_cmd(
+        data,
+        """python -c 'print("\u2014")'""",
+    )
+
+    tools.run_cmd(
+        data,
+        """python -c 'print("—")'""",
+    )
+    # check that for all times text is written to a file during the cmd run
+    # that the character coding is stated explicitly
+    # i.e. Path("a_path.txt").write_text("some text", encoding='utf-8')
+    for call in mocked_write_text.mock_calls:
+        assert "utf-8" in call.args or "encoding" in call.kwargs
 
 
 def test_check_git_config(
