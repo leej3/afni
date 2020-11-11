@@ -46,7 +46,6 @@ data_paths = {
                 "extra_args": "-rigid_equiv",
             },
         ),
-
     ],
 )
 @pytest.mark.veryslow
