@@ -92,6 +92,7 @@ def pytest_generate_tests(metafunc):
         os.environ["DYLD_LIBRARY_PATH"] = "/opt/X11/lib/flat_namespace"
 
     os.environ["AFNI_SPLASH_ANIMATE"] = "NO"
+    os.environ["NO_CMD_MOD"] = "true"
     unset_vars = [
         "AFNI_PLUGINPATH",
         "AFNI_PLUGIN_PATH",
