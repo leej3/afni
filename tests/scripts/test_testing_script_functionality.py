@@ -163,6 +163,29 @@ def test_execute_cmd_args(params):
     assert timed_out == params["expected_to_timeout"]
 
 
+@pytest.mark.parametrize(
+    "params",
+    [
+        {
+            "test_case": "asynchronous",
+            "use_asynchronous_execution": True,
+        },
+        {
+            "test_case": "blocking execution",
+            "use_asynchronous_execution": False,
+        },
+    ],
+)
+def test_run_cmd_raises_on_nonzero_exit(data, params):
+    with pytest.raises((sp.CalledProcessError, FileNotFoundError)):
+        proc = tools.run_cmd(
+            data,
+            "non_existent_cmd",
+            use_asynchronous_execution=params["use_asynchronous_execution"],
+            timeout=1,
+        )
+
+
 def test_run_cmd_timeout(data, monkeypatch):
     data.logger = logging
     monkeypatch.setattr(logging, "warn", lambda x: None)

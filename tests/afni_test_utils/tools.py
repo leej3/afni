@@ -363,6 +363,8 @@ async def __execute_cmd_args_asynchronous(
         stdoutdir = "/".join([stdout_log.parent.name, stderr_log.name])
         raise TimeoutError(f"stdout: {stdoutdir} in {stdout_log.parent.parent}")
 
+    return p.returncode
+
 
 def __execute_cmd_args(
     cmd_args,
@@ -547,7 +549,8 @@ def run_cmd(
 
     # Raise error if there was a non-zero exit code.
     if returncode:
-        raise ValueError(f"{cmd}\n Command returned a non-zero exit code.")
+        error_txt = stderr_log.read_text()
+        raise subprocess.CalledProcessError(cmd, returncode)
 
     return stdout_log, stderr_log
 
