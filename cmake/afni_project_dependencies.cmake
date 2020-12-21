@@ -3,6 +3,12 @@ include(FetchContent)
 include(FindStandardMathLibrary)
 include(BuildType)
 find_package(ZLIB REQUIRED)
+
+if(COMP_MINI_MRI)
+    return()
+endif()
+############################# End if mini_mri is being built ################
+
 optional_bundle(src/f2c)
 set_if_not_defined(USE_SYSTEM_QHULL ON)
 

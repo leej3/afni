@@ -1,7 +1,7 @@
 # ##### Create global entity in which to store installed targets
 set_property(GLOBAL PROPERTY INSTALLED_PROGS "")
 add_subdirectory(niml)
-if(COMP_MRILIB_MINI)
+if(COMP_MINI_MRI)
   add_afni_library(
       mri_mini
       mri_blur3d_variable.c

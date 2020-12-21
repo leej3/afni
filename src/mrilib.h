@@ -1663,6 +1663,10 @@ extern char * SYM_test_gltsym( char *varlist , char *gltsym ) ; /* 01 May 2015 *
 
 THD_string_array * mri_read_1D_headerline( char *fname ) ; /* 18 May 2010 */
 
+#ifdef HAVE_ZLIB
+#include <zlib.h>             /* 02 Mar 2009 */
+#endif
+
 #endif /* MRILIB_MINI */
 
 #include "rcmat.h"            /* 30 Dec 2008 */
@@ -1674,10 +1678,6 @@ THD_string_array * mri_read_1D_headerline( char *fname ) ; /* 18 May 2010 */
 
 /*-----------------  02 Feb 1998:
                      incoroporation of 3ddata, 3dmaker, iochan -----------*/
-
-#ifdef HAVE_ZLIB
-#include <zlib.h>             /* 02 Mar 2009 */
-#endif
 
 #include "misc_math.h"        /* 21 Jun 2010 [rickr] */
 

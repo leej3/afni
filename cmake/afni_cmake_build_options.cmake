@@ -47,6 +47,17 @@ set_if_not_defined(AFNI_INSTALL_DOC_DIR ${CMAKE_INSTALL_DOCDIR})
 set_if_not_defined(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/targets_built)
 set_if_not_defined(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/targets_built)
 
+# Main build can be skipped in favor of a minimal build of the mri library for downstreams. This is predominantly for usage in the browser via WASM.
+
+option(COMP_MINI_MRI "Build a reduced version of mrilib functionality" OFF)
+if (COMP_MINI_MRI)
+    set(COMP_CORELIBS_ONLY ON CACHE BOOL "mri_mini" FORCE)
+    set(REMOVE_BUILD_PARITY_CHECKS ON CACHE BOOL "mri_mini" FORCE)
+    return()
+else()
+
+endif()
+
 # Add a default attempt at setting the run path correctly for binaries
 if(NOT CMAKE_SKIP_INSTALL_RPATH)
   file(
@@ -75,8 +86,6 @@ option(COMP_CORELIBS_ONLY
        "Only build core libraries, no SUMA, plugins or programs" OFF
 )
 set(COMP_CORELIBS "Core C libraries" ON)
-
-option(COMP_MINI_MRI "Build a reduced version of mrilib functionality" OFF)
 
 cmake_dependent_option(
   COMP_COREBINARIES "Build a large portion of the C executables" ON
@@ -154,10 +163,10 @@ check_afni_install_components("${ALLOWED_INSTALL_COMPS}" "${COMP_INSTALL_RESTRIC
 
 
 # Define other customizations to the build-process
+option(REMOVE_BUILD_PARITY_CHECKS "For internal use only" OFF)
 option(COMP_ATLASES "Use datalad to download data for distribution" OFF)
 set_if_not_defined(COMP_ALL_PLUGINS "By default a core set of plugins are built." ON)
 option(GENERATE_PACKAGING_COMPONENTS "For internal use only" OFF)
-option(REMOVE_BUILD_PARITY_CHECKS "For internal use only" OFF)
 option(USE_OMP "Fail if OMP is not found - otherwise it is used if found" OFF)
 mark_as_advanced(USE_OMP)
 option(USE_CPACK "CPack can be used to generate source and binary distributions" OFF)
