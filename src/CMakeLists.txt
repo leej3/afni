@@ -2,13 +2,15 @@
 set_property(GLOBAL PROPERTY INSTALLED_PROGS "")
 add_subdirectory(niml)
 if(COMP_MINI_MRI)
-  add_afni_library(
-      mri_mini
+  add_library(mri_mini OBJECT
       mri_blur3d_variable.c
       mri_new.c
       mri_free.c
       debugtrace.c
-  )
+      )
+
+  add_library(AFNI::mri_mini ALIAS mri_mini)
+    
   set_target_properties(
       mri_mini
       PROPERTIES
